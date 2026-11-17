@@ -46,8 +46,9 @@ def get_snacks(
     if category:
         query = query.where(Snack.category == category)
     
-    if status:
-        query = query.where(status_expr == literal_column(f"'{status}'"))
+    VALID_STATUSES = {"stocked", "running_low", "gone"}
+    if status and status in VALID_STATUSES:
+        query = query.where(status_expr == status)
     
     if q:
         escaped_q = q.replace("%", "\\%").replace("_", "\\_")

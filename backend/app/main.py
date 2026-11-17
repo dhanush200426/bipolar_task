@@ -9,13 +9,14 @@ from app.core.errors import (
     validation_error_handler,
     http_exception_handler,
     integrity_error_handler,
+    operational_error_handler,
     general_exception_handler
 )
 from app.api.routes.auth import router as auth_router
 from app.api.routes.snacks import router as snacks_router
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, OperationalError
 
 app = FastAPI(
     title="Snack Overflow API",
@@ -40,6 +41,7 @@ app.add_exception_handler(Exception, general_exception_handler)
 app.add_exception_handler(RequestValidationError, validation_error_handler)
 app.add_exception_handler(StarletteHTTPException, http_exception_handler)
 app.add_exception_handler(IntegrityError, integrity_error_handler)
+app.add_exception_handler(OperationalError, operational_error_handler)
 
 # Include routers
 app.include_router(auth_router)

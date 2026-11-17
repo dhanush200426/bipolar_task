@@ -3,7 +3,7 @@ from fastapi import Request, status
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, OperationalError
 import logging
 
 logger = logging.getLogger(__name__)
@@ -21,6 +21,7 @@ class ErrorCode:
     VALIDATION_ERROR = "VALIDATION_ERROR"
     NOT_FOUND = "NOT_FOUND"
     METHOD_NOT_ALLOWED = "METHOD_NOT_ALLOWED"
+    SERVICE_UNAVAILABLE = "SERVICE_UNAVAILABLE"
     INTERNAL_ERROR = "INTERNAL_ERROR"
 
 
@@ -51,8 +52,8 @@ async def validation_error_handler(request: Request, exc: RequestValidationError
                     v.decode('utf-8', errors='replace') if isinstance(v, bytes) else v
                     for v in value
                 ]
-    field_names = [err["loc"][-1] for err in errors if err["loc"]]
-    message = f"Validation failed for: {', '.join(field_names)}"
+    field_names = [str(err["loc"][-1]) for err in errors if err.get("loc")]
+    message = f"Validation failed for: {', '.join(field_names)}" if field_names else "Validation failed for request"
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content={
@@ -90,6 +91,14 @@ async def integrity_error_handler(request: Request, exc: IntegrityError) -> JSON
     return JSONResponse(
         status_code=status.HTTP_409_CONFLICT,
         content={"error": {"code": ErrorCode.INTERNAL_ERROR, "message": "Data conflict"}}
+    )
+
+
+async def operational_error_handler(request: Request, exc: OperationalError) -> JSONResponse:
+    logger.error(f"Database operational error: {exc}")
+    return JSONResponse(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        content={"error": {"code": ErrorCode.SERVICE_UNAVAILABLE, "message": "Database service unavailable"}}
     )
 
 
