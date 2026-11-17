@@ -1,13 +1,81 @@
 <!DOCTYPE html>
-<html lang="">
+<html lang="en">
   <head>
     <meta charset="UTF-8">
     <link rel="icon" href="/favicon.ico">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vite App</title>
+    <title>Snack Overflow</title>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+      
+      body {
+        font-family: 'Inter', sans-serif;
+        background-color: #FFF8EE;
+        color: #1F1B18;
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      
+      #app-fallback {
+        text-align: center;
+        padding: 2rem;
+        max-width: 400px;
+      }
+      
+      #app-fallback h1 {
+        font-family: 'Baloo 2', cursive;
+        font-size: 2rem;
+        color: #E4472B;
+        margin-bottom: 1rem;
+      }
+      
+      #app-fallback p {
+        color: #6B625B;
+        margin-bottom: 1.5rem;
+      }
+      
+      #app-fallback button {
+        padding: 0.75rem 1.5rem;
+        background-color: #E4472B;
+        color: white;
+        border: none;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+      }
+      
+      #app-fallback button:hover {
+        background-color: #C8321A;
+      }
+    </style>
   </head>
   <body>
     <div id="app"></div>
+    <noscript>
+      <div id="app-fallback">
+        <h1>JavaScript Required</h1>
+        <p>Snack Overflow requires JavaScript to function. Please enable it in your browser settings.</p>
+      </div>
+    </noscript>
     <script type="module" src="/src/main.ts"></script>
+    <script>
+      // Inline fallback if the main script fails to load
+      window.addEventListener('error', function(e) {
+        if (e.target.tagName === 'SCRIPT') {
+          document.getElementById('app').innerHTML = `
+            <div id="app-fallback">
+              <h1>Something went wrong</h1>
+              <p>We couldn't load the application. Please check your connection and try again.</p>
+              <button onclick="location.reload()">Reload</button>
+            </div>
+          `;
+        }
+      }, true);
+    </script>
   </body>
 </html>

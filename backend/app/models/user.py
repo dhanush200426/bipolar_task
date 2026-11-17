@@ -10,8 +10,8 @@ class Base(DeclarativeBase):
 
 
 class UserRole(str, enum.Enum):
-    ADMIN = "admin"
-    MEMBER = "member"
+    ADMIN = "ADMIN"
+    MEMBER = "MEMBER"
 
 
 class User(Base):
@@ -25,7 +25,7 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     __table_args__ = (
-        Index("ix_users_email_lower", "email", postgresql_ops={"email": "LOWER"}, unique=True),
+        Index("ix_users_email", "email", unique=True),
     )
 
     votes = relationship("Vote", back_populates="user", cascade="all, delete-orphan")

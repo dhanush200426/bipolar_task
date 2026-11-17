@@ -2,6 +2,46 @@
 
 A production-minded office pantry tracker for managing snacks and inventory.
 
+## Screenshots
+
+*(Screenshots to be added - showing the dashboard with summary cards, snack of the week showcase, and running low strip)*
+
+## Features
+
+### Dashboard
+- **Hero Section**: Personalized greeting with floating garnish parallax animations
+- **Summary Cards**: Real-time pantry overview with animated count-up numbers (Stocked, Running Low, Gone, Total)
+- **Snack of the Week**: Sticky showcase section with pinned illustration, rotation/scale animations, and voting capability
+- **Running Low Strip**: Horizontal scroll-snap row for quick access to low-stock items with swipe/arrow navigation
+
+### Snack Catalog (/snacks)
+- **Sticky Category Tabs**: Pins under top bar when scrolling past the header; horizontally scrollable on mobile with scroll-snap (All, Sweet, Savoury, Drink, Healthy-ish).
+- **Filter & Search Controls**: Stock status dropdown (All, Stocked, Running low, Gone), debounced name search (300ms), and multi-criteria sort (name, quantity, votes in asc/desc).
+- **URL Query Param Sync**: Full two-way mapping (`?category=&status=&q=&page=&sort_by=&order=`), preserving filters across refresh and browser history, with automatic fallback on malformed query values.
+- **Stale Response Protection**: Request counter and `AbortController` cancellation prevent race conditions from typing.
+- **Snack Card Grid**: Responsive grid layout (1 column mobile, 2-3 tablet, 3-4 desktop) with GSAP fade/slide entrance stagger.
+- **Status Visuals**: Amber ribbon and pulsing badge for `running_low` snacks; muted/desaturated grayscale for `gone` snacks with disabled stepper and Consume button.
+- **Tactile Consume Stepper**: Quantity stepper (`1` to `min(quantity, 10)`), loading spinner to prevent double-submit, checkmark success morph, and live quantity countdown.
+- **Concurrency 409 Resilience**: Catches `INSUFFICIENT_STOCK` (409), shakes the card with CSS keyframe animation, alerts the user with a toast, and refreshes the card with the latest server data.
+- **Interactive Voting**: Toggle heart with pop micro-interaction, live vote count sync, and conflict recovery against `ALREADY_VOTED` and `VOTE_NOT_FOUND`.
+- **Pagination**: Numbered page selector with prev/next controls, disabled boundary states, count summary, and automatic smooth scroll to grid top.
+- **Floating Action Button (FAB)**: Safe-area-aware pulsing FAB providing "+ Add snack" for Admins (opens modal) and "Snack of the Week" shortcut for Members.
+- **State Handling**: Shimmering skeleton cards during load, clear-filter empty state, and error recovery view.
+
+### Authentication
+- JWT-based authentication with role-based access control (Admin/Member)
+- Secure login with demo accounts for testing
+- Session persistence with automatic token refresh
+- Protected routes with redirect preservation
+
+### Design & UX
+- Warm food-themed color palette (tomato, chili, orange, golden, cream, peach)
+- Self-hosted fonts (Baloo 2 for headings, Inter for body)
+- GSAP + ScrollTrigger animations with reduced motion support
+- Responsive design with mobile-first approach
+- Accessible with WCAG-contrast-safe colors and 44px minimum touch targets
+- Global error safety net to prevent white screens
+
 ## Stack
 
 ### Backend
@@ -26,6 +66,15 @@ A production-minded office pantry tracker for managing snacks and inventory.
 - Pinia (state management)
 - Vue Router
 - GSAP + ScrollTrigger (animations)
+- @fontsource (self-hosted fonts: Baloo 2, Inter)
+
+### Design Notes
+
+**Authentication Token Storage**: The frontend stores JWT tokens in localStorage for simplicity. This is a trade-off:
+- **localStorage**: Vulnerable to XSS attacks (malicious JS can read tokens)
+- **httpOnly cookies**: More secure against XSS but require CSRF protection and are harder to implement with SPA refresh tokens
+
+For a production app, consider httpOnly cookies with CSRF tokens, short-lived access tokens with refresh rotation, and Content Security Policy (CSP) headers to mitigate XSS.
 
 ## Quick Start (Windows PowerShell)
 
@@ -82,7 +131,45 @@ cd D:\bipolar_task\backend
 alembic upgrade head
 ```
 
+### Frontend Setup
+
+1. **Navigate to frontend directory**
+```powershell
+cd D:\bipolar_task\frontend\vue-project
+```
+
+2. **Install dependencies**
+```powershell
+npm install
+```
+
+3. **Configure environment variables**
+```powershell
+# Copy the example env file
+Copy-Item .env.example .env
+# Edit .env if needed (default: VITE_API_BASE_URL=http://localhost:8000)
+```
+
+4. **Run development server**
+```powershell
+npm run dev
+```
+
+The frontend will be available at http://localhost:5173
+
+5. **Build for production**
+```powershell
+npm run build
+```
+
+6. **Type checking**
+```powershell
+npm run type-check
+```
+
 ## Environment Variables
+
+### Backend
 
 | Variable | Description | Default |
 |----------|-------------|---------|
@@ -95,6 +182,30 @@ alembic upgrade head
 | `POSTGRES_USER` | PostgreSQL user | `snackoverflow` |
 | `POSTGRES_PASSWORD` | PostgreSQL password | `snackoverflow` |
 | `POSTGRES_DB` | PostgreSQL database name | `snackoverflow` |
+
+### Frontend
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `VITE_API_BASE_URL` | Backend API base URL | `http://localhost:8000` |
+
+## Demo Accounts
+
+The application includes demo accounts for testing:
+
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | admin@snackoverflow.test | Any password |
+| Member | member@snackoverflow.test | Any password |
+
+**Note**: For demo purposes, any password works. In production, proper password validation would be enforced.
+
+### Role Behavior
+
+- **Admin**: Full access to all features including creating, updating, and deleting snacks, restocking inventory, and viewing all activity.
+- **Member**: Can view snacks, consume items, vote for snacks, and view the dashboard. Cannot modify snack details or restock inventory.
+
+The backend enforces role-based access control. The frontend conditionally renders admin-only controls based on the user's role, but the backend is the final authority.
 
 ## Error Response Format
 
@@ -325,7 +436,24 @@ D:\bipolar_task\
 │   ├── alembic/          # Database migrations
 │   ├── tests/            # Test suite
 │   └── requirements.txt  # Pinned dependencies
-├── frontend/             # Vue 3 application
+├── frontend/
+│   └── vue-project/
+│       ├── src/
+│       │   ├── api/           # API client and typed endpoints
+│       │   ├── assets/        # SVG illustrations
+│       │   ├── components/    # Reusable Vue components (AppShell, Toast, ErrorState, etc.)
+│       │   ├── composables/   # Vue composables (useToast)
+│       │   ├── router/        # Vue Router configuration with guards
+│       │   ├── stores/        # Pinia stores (auth)
+│       │   ├── styles/        # CSS tokens and base styles
+│       │   ├── utils/         # Utility functions (errorMessages, clickOutside)
+│       │   ├── views/         # Page components (Login, Dashboard, Snacks, etc.)
+│       │   ├── App.vue        # Root component
+│       │   └── main.ts        # Application entry
+│       ├── .env.example      # Environment variables template
+│       ├── index.html        # HTML template with fallback
+│       ├── package.json      # NPM dependencies
+│       └── vite.config.ts    # Vite configuration
 ├── scripts/              # Development and concurrency test scripts
 ├── docker-compose.yml    # PostgreSQL service
 └── README.md

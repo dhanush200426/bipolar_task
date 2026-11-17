@@ -34,7 +34,7 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index('ix_snacks_category', 'snacks', ['category'], unique=False)
-    op.create_index('ix_snacks_name_lower', 'snacks', [sa.text('LOWER(name)')], unique=True, postgresql_using='btree')
+    op.create_index('ix_snacks_name', 'snacks', ['name'], unique=True)
     op.create_table('users',
     sa.Column('id', sa.String(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
@@ -44,7 +44,7 @@ def upgrade() -> None:
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index('ix_users_email_lower', 'users', [sa.text('LOWER(email)')], unique=True, postgresql_using='btree')
+    op.create_index('ix_users_email', 'users', ['email'], unique=True)
     op.create_table('activities',
     sa.Column('id', sa.String(), nullable=False),
     sa.Column('user_id', sa.String(), nullable=True),
@@ -82,9 +82,9 @@ def downgrade() -> None:
     op.drop_index('ix_activities_snack_id', table_name='activities')
     op.drop_index('ix_activities_created_at', table_name='activities')
     op.drop_table('activities')
-    op.drop_index('ix_users_email_lower', table_name='users')
+    op.drop_index('ix_users_email', table_name='users')
     op.drop_table('users')
-    op.drop_index('ix_snacks_name_lower', table_name='snacks')
+    op.drop_index('ix_snacks_name', table_name='snacks')
     op.drop_index('ix_snacks_category', table_name='snacks')
     op.drop_table('snacks')
     # ### end Alembic commands ###

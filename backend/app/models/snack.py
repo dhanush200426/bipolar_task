@@ -27,7 +27,7 @@ class Snack(Base):
     __table_args__ = (
         CheckConstraint("quantity >= 0", name="check_quantity_non_negative"),
         CheckConstraint("low_stock_threshold >= 0", name="check_low_stock_threshold_non_negative"),
-        Index("ix_snacks_name_lower", "name", postgresql_ops={"name": "LOWER"}, unique=True),
+        Index("ix_snacks_name", "name", unique=True),
         Index("ix_snacks_category", "category"),
     )
 

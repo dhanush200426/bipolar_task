@@ -17,7 +17,7 @@ def login(login_data: LoginRequest, db: Session = Depends(get_db)):
     
     if user:
         if verify_password(login_data.password, user.password_hash):
-            access_token = create_access_token(sub=user.id, role=user.role.value)
+            access_token = create_access_token(sub=user.id, role=str(user.role))
             return LoginResponse(
                 access_token=access_token,
                 token_type="bearer",
