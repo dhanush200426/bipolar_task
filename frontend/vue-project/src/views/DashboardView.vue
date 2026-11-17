@@ -563,6 +563,9 @@ watch(summary, () => {
 <style scoped>
 .dashboard-view {
   min-height: 100vh;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 
 /* Hero Section */

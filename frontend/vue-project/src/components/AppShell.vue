@@ -384,6 +384,9 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   background-color: #FFFFFF;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 
 /* ── Full-Scale Header (#490982 Purple) ── */
@@ -394,6 +397,10 @@ onUnmounted(() => {
   background-color: #490982;
   box-shadow: 0 2px 12px rgba(73, 9, 130, 0.25);
   transition: all var(--transition-base);
+  width: 100%;
+  max-width: 100vw;
+  box-sizing: border-box;
+  overflow-x: clip;
 }
 
 .app-shell__header--scrolled {
@@ -410,6 +417,8 @@ onUnmounted(() => {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-6);
+  box-sizing: border-box;
+  min-width: 0;
 }
 
 /* Logo */
@@ -588,6 +597,8 @@ onUnmounted(() => {
   top: calc(100% + var(--space-2));
   right: 0;
   min-width: 250px;
+  max-width: calc(100vw - 2rem);
+  box-sizing: border-box;
   background-color: #FFFFFF;
   border: 1px solid var(--color-peach);
   border-radius: var(--radius-lg);
@@ -675,6 +686,10 @@ onUnmounted(() => {
   background-color: #350661;
   border-bottom: 2px solid rgba(255, 255, 255, 0.15);
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+  width: 100%;
+  max-width: 100vw;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 .app-shell__mobile-user-card {
@@ -686,6 +701,10 @@ onUnmounted(() => {
   border-radius: var(--radius-lg);
   margin-bottom: var(--space-3);
   border: 1px solid rgba(255, 255, 255, 0.18);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .app-shell__mobile-avatar {
@@ -702,11 +721,17 @@ onUnmounted(() => {
   flex-shrink: 0;
 }
 
+.app-shell__mobile-user-meta,
 .app-shell__mobile-user-details {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+.app-shell__mobile-user-card .badge {
+  flex-shrink: 0;
 }
 
 .app-shell__mobile-user-name {
@@ -716,6 +741,7 @@ onUnmounted(() => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .app-shell__mobile-user-email {
@@ -724,6 +750,7 @@ onUnmounted(() => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .app-shell__mobile-link {

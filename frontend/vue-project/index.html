@@ -3,11 +3,18 @@
   <head>
     <meta charset="UTF-8">
     <link rel="icon" href="/favicon.ico">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Snack Overflow</title>
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
       
+      html, body {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: hidden;
+        position: relative;
+      }
+
       body {
         font-family: 'Inter', sans-serif;
         background-color: #FFF8EE;
@@ -15,12 +22,16 @@
         margin: 0;
         padding: 0;
         min-height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+      }
+
+      #app {
+        width: 100%;
+        max-width: 100%;
+        min-height: 100vh;
       }
       
       #app-fallback {
+        margin: 15vh auto;
         text-align: center;
         padding: 2rem;
         max-width: 400px;

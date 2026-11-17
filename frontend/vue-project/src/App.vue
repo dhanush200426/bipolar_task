@@ -4,14 +4,18 @@ import Toast from './components/Toast.vue'
 </script>
 
 <template>
-  <div id="app">
+  <div class="app-root">
     <AppShell />
     <Toast />
   </div>
 </template>
 
 <style>
-#app {
+.app-root {
   min-height: 100vh;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+  position: relative;
 }
 </style>
