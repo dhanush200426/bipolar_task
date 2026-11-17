@@ -1,20 +1,57 @@
 services:
+  # ── PostgreSQL 16 ──────────────────────────────────────────────────────────
   db:
-    image: postgres:16
+    image: postgres:16-alpine
     container_name: snackoverflow_db
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-snackoverflow}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-snackoverflow}
-      POSTGRES_DB: ${POSTGRES_DB:-snackoverflow}
-    ports:
-      - "5432:5432"
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    # healthcheck lets backend wait until Postgres is actually ready
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-snackoverflow}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 5
+    ports:
+      - "5432:5432"
+
+  # ── FastAPI Backend ────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: snackoverflow_backend
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-60}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost}
+      ENV: ${ENV:-production}
+      SEED_ON_START: ${SEED_ON_START:-false}
+    # Only start after the DB healthcheck passes
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+
+  # ── Vue 3 Frontend (nginx) ─────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend/vue-project
+      dockerfile: Dockerfile
+      args:
+        # Baked into the JS bundle at image build time (browser-relative URL)
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000}
+    container_name: snackoverflow_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
 
 volumes:
   postgres_data:

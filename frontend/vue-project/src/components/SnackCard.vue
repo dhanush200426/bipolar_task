@@ -6,6 +6,8 @@
       'snack-card--running-low': snack.status === 'running_low',
       'snack-card--gone': snack.status === 'gone',
       'snack-card--shake': isShaking,
+      'snack-card--restocked': isRestocked,
+      'snack-card--deleting': isDeleting,
     }"
     tabindex="0"
     :aria-label="`${snack.name}, category ${snack.category}, ${snack.quantity} in stock, status ${snack.status}`"
@@ -208,6 +210,54 @@
         </span>
       </button>
     </div>
+
+    <!-- Admin Controls: RENDERED ONLY WHEN USER IS ADMIN -->
+    <div v-if="isAdmin" class="snack-card__admin-bar">
+      <!-- Restock Button -->
+      <button
+        type="button"
+        class="admin-btn admin-btn--restock"
+        :aria-label="`Restock ${snack.name}`"
+        title="Restock pantry stock"
+        @click="$emit('restock', snack)"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="admin-btn__icon">
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+          <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+          <line x1="12" y1="22.08" x2="12" y2="12" />
+        </svg>
+        <span>Restock</span>
+      </button>
+
+      <!-- Edit Button -->
+      <button
+        type="button"
+        class="admin-btn admin-btn--icon"
+        :aria-label="`Edit ${snack.name}`"
+        title="Edit snack name, category, or threshold"
+        @click="$emit('edit', snack)"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="admin-btn__icon">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+        </svg>
+      </button>
+
+      <!-- Delete Button -->
+      <button
+        type="button"
+        class="admin-btn admin-btn--icon admin-btn--delete"
+        :aria-label="`Delete ${snack.name}`"
+        title="Delete snack permanently"
+        @click="$emit('delete', snack)"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="admin-btn__icon">
+          <path d="M3 6h18" />
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+          <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+        </svg>
+      </button>
+    </div>
   </article>
 </template>
 
@@ -219,14 +269,27 @@ import { snacksApi } from '../api/snacks';
 import { votesApi } from '../api/votes';
 import { useToast } from '../composables/useToast';
 
-const props = defineProps<{
-  snack: Snack;
-}>();
+const props = withDefaults(
+  defineProps<{
+    snack: Snack;
+    isAdmin?: boolean;
+    isRestocked?: boolean;
+    isDeleting?: boolean;
+  }>(),
+  {
+    isAdmin: false,
+    isRestocked: false,
+    isDeleting: false,
+  }
+);
 
 const emit = defineEmits<{
   (e: 'update:snack', updated: Snack): void;
   (e: 'consumed', snack: Snack, amount: number): void;
   (e: 'voted', snack: Snack): void;
+  (e: 'edit', snack: Snack): void;
+  (e: 'restock', snack: Snack): void;
+  (e: 'delete', snack: Snack): void;
 }>();
 
 const { success: toastSuccess, error: toastError, warning: toastWarning } = useToast();
@@ -323,30 +386,24 @@ async function handleConsume() {
   try {
     const updatedSnack = await snacksApi.consume(props.snack.id, { amount: amountToConsume });
 
-    // Success micro-interaction
     isConsumeSuccess.value = true;
     toastSuccess(`Consumed ${amountToConsume} ${props.snack.name}! Enjoy your snack.`);
 
-    // Emit updated snack with fresh quantity/status
     emit('update:snack', updatedSnack);
     emit('consumed', updatedSnack, amountToConsume);
 
-    // Keep checkmark morph for 1.2s
     setTimeout(() => {
       isConsumeSuccess.value = false;
     }, 1200);
   } catch (err: any) {
-    // Check if error is 409 INSUFFICIENT_STOCK
     if (err?.code === 'INSUFFICIENT_STOCK' || err?.status === 409) {
       toastWarning('Someone beat you to the last packet!');
       triggerShake();
 
-      // REFRESH this card with the server's current data
       try {
         const freshSnack = await snacksApi.get(props.snack.id);
         emit('update:snack', freshSnack);
       } catch {
-        // If 404 or server unreachable, mark as gone locally
         const goneSnack: Snack = {
           ...props.snack,
           quantity: 0,
@@ -378,7 +435,6 @@ async function handleVoteToggle() {
 
   try {
     if (wasVoted) {
-      // Unvote
       const res = await votesApi.unvote(props.snack.id);
       const updated: Snack = {
         ...props.snack,
@@ -388,7 +444,6 @@ async function handleVoteToggle() {
       emit('update:snack', updated);
       emit('voted', updated);
     } else {
-      // Vote
       const res = await votesApi.vote(props.snack.id);
       const updated: Snack = {
         ...props.snack,
@@ -399,7 +454,6 @@ async function handleVoteToggle() {
       emit('voted', updated);
     }
   } catch (err: any) {
-    // Concurrency / Out-of-sync error handling
     if (err?.code === 'ALREADY_VOTED' || err?.code === 'VOTE_NOT_FOUND') {
       try {
         const freshSnack = await snacksApi.get(props.snack.id);
@@ -480,6 +534,36 @@ async function handleVoteToggle() {
 .snack-card--gone:hover {
   transform: none;
   box-shadow: var(--shadow-sm);
+}
+
+/* Restock Glow Animation */
+.snack-card--restocked {
+  animation: restockGlow 1.4s ease-out;
+}
+
+@keyframes restockGlow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(46, 158, 107, 0.7);
+    border-color: var(--color-success);
+    transform: scale(1.02);
+  }
+  40% {
+    box-shadow: 0 0 20px 4px rgba(46, 158, 107, 0.45);
+    border-color: var(--color-success);
+    transform: scale(1.02);
+  }
+  100% {
+    box-shadow: var(--shadow-sm);
+    transform: scale(1);
+  }
+}
+
+/* Deleting Fade-out Animation */
+.snack-card--deleting {
+  opacity: 0 !important;
+  transform: scale(0.88) translateY(14px) !important;
+  pointer-events: none;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Card Shake Animation */
@@ -859,6 +943,70 @@ async function handleVoteToggle() {
   100% { transform: rotate(360deg); }
 }
 
+/* ---------------------------------------------------------------------------
+   ADMIN TOOLBAR: RENDERED ONLY WHEN isAdmin === true
+   --------------------------------------------------------------------------- */
+.snack-card__admin-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid rgba(31, 27, 24, 0.08);
+}
+
+.admin-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 34px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(31, 27, 24, 0.12);
+  background-color: var(--color-cream);
+  color: var(--color-charcoal);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.admin-btn--restock {
+  flex: 1;
+  padding: 0 var(--space-3);
+  color: var(--color-success);
+  border-color: rgba(46, 158, 107, 0.3);
+  background-color: rgba(46, 158, 107, 0.08);
+}
+
+.admin-btn--restock:hover {
+  background-color: var(--color-success);
+  color: #ffffff;
+  border-color: var(--color-success);
+}
+
+.admin-btn--icon {
+  width: 34px;
+  flex: 0 0 34px;
+  color: var(--color-muted);
+}
+
+.admin-btn--icon:hover {
+  background-color: rgba(31, 27, 24, 0.08);
+  color: var(--color-charcoal);
+}
+
+.admin-btn--delete:hover {
+  background-color: #FDF2F2;
+  color: var(--color-danger);
+  border-color: rgba(211, 47, 47, 0.3);
+}
+
+.admin-btn__icon {
+  width: 14px;
+  height: 14px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .snack-card:hover {
     transform: none;
@@ -873,6 +1021,9 @@ async function handleVoteToggle() {
     animation: none;
   }
   .snack-card__consume-btn--success {
+    animation: none;
+  }
+  .snack-card--restocked {
     animation: none;
   }
 }

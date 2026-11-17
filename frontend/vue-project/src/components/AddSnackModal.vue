@@ -5,14 +5,18 @@
       class="modal-backdrop"
       role="presentation"
       @click.self="handleClose"
-      @keydown.esc="handleClose"
     >
       <div
-        class="modal-dialog"
+        ref="modalRef"
+        class="modal-dialog modal-dialog--sheet"
         role="dialog"
         aria-modal="true"
         aria-labelledby="add-snack-title"
+        tabindex="-1"
       >
+        <!-- Modal Drag Handle for Mobile Bottom Sheet -->
+        <div class="modal-handle-bar" aria-hidden="true"></div>
+
         <!-- Modal Header -->
         <div class="modal-header">
           <div class="modal-header__title-group">
@@ -29,6 +33,7 @@
             type="button"
             class="modal-close-btn"
             aria-label="Close dialog"
+            title="Close dialog (Esc)"
             @click="handleClose"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -39,14 +44,15 @@
         </div>
 
         <!-- Modal Form -->
-        <form @submit.prevent="handleSubmit" class="modal-form">
+        <form @submit.prevent="handleSubmit" class="modal-form" novalidate>
           <!-- Name Field -->
           <div class="form-group">
-            <label for="snack-name" class="form-label">
+            <label for="add-snack-name" class="form-label">
               Snack Name <span class="required-star">*</span>
             </label>
             <input
-              id="snack-name"
+              id="add-snack-name"
+              ref="nameInputRef"
               v-model="name"
               type="text"
               class="form-input"
@@ -54,21 +60,23 @@
               placeholder="e.g. Sea Salt Dark Chocolate Chips"
               maxlength="255"
               required
-              autofocus
+              :disabled="isSubmitting"
+              @input="errors.name = ''"
             />
-            <span v-if="errors.name" class="form-error">{{ errors.name }}</span>
+            <span v-if="errors.name" class="form-error" role="alert">{{ errors.name }}</span>
           </div>
 
           <!-- Category Field -->
           <div class="form-group">
-            <label for="snack-category" class="form-label">
+            <label for="add-snack-category" class="form-label">
               Category <span class="required-star">*</span>
             </label>
             <select
-              id="snack-category"
+              id="add-snack-category"
               v-model="category"
               class="form-select"
               required
+              :disabled="isSubmitting"
             >
               <option value="sweet">Sweet</option>
               <option value="savoury">Savoury</option>
@@ -80,34 +88,38 @@
           <!-- Quantity & Low Stock Threshold Grid -->
           <div class="form-row">
             <div class="form-group">
-              <label for="snack-quantity" class="form-label">
+              <label for="add-snack-quantity" class="form-label">
                 Initial Stock <span class="required-star">*</span>
               </label>
               <input
-                id="snack-quantity"
+                id="add-snack-quantity"
                 v-model.number="quantity"
                 type="number"
                 min="0"
                 class="form-input"
                 :class="{ 'form-input--error': errors.quantity }"
                 required
+                :disabled="isSubmitting"
+                @input="errors.quantity = ''"
               />
-              <span v-if="errors.quantity" class="form-error">{{ errors.quantity }}</span>
+              <span v-if="errors.quantity" class="form-error" role="alert">{{ errors.quantity }}</span>
             </div>
 
             <div class="form-group">
-              <label for="snack-threshold" class="form-label">
+              <label for="add-snack-threshold" class="form-label">
                 Low Stock Alert At
               </label>
               <input
-                id="snack-threshold"
+                id="add-snack-threshold"
                 v-model.number="lowStockThreshold"
                 type="number"
                 min="0"
                 class="form-input"
                 :class="{ 'form-input--error': errors.threshold }"
+                :disabled="isSubmitting"
+                @input="errors.threshold = ''"
               />
-              <span v-if="errors.threshold" class="form-error">{{ errors.threshold }}</span>
+              <span v-if="errors.threshold" class="form-error" role="alert">{{ errors.threshold }}</span>
             </div>
           </div>
 
@@ -150,10 +162,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch } from 'vue';
+import { ref, reactive, watch, toRef } from 'vue';
 import type { Snack, SnackCategoryType } from '../api/types';
 import { snacksApi } from '../api/snacks';
 import { useToast } from '../composables/useToast';
+import { useModalAccessibility } from '../composables/useModalAccessibility';
 
 const props = defineProps<{
   isOpen: boolean;
@@ -166,6 +179,9 @@ const emit = defineEmits<{
 
 const { success: toastSuccess } = useToast();
 
+const modalRef = ref<HTMLElement | null>(null);
+const nameInputRef = ref<HTMLInputElement | null>(null);
+
 const name = ref('');
 const category = ref<SnackCategoryType>('sweet');
 const quantity = ref(10);
@@ -177,6 +193,14 @@ const errors = reactive({
   name: '',
   quantity: '',
   threshold: '',
+});
+
+// Setup focus trap, esc listener, return focus, and body scroll lock
+useModalAccessibility({
+  isOpen: toRef(props, 'isOpen'),
+  modalRef,
+  onClose: handleClose,
+  initialFocusRef: nameInputRef,
 });
 
 // Reset form when modal opens
@@ -211,16 +235,23 @@ async function handleSubmit() {
   const trimmedName = name.value.trim();
   if (!trimmedName) {
     errors.name = 'Please provide a snack name';
+    nameInputRef.value?.focus();
     return;
   }
 
-  if (quantity.value < 0) {
-    errors.quantity = 'Stock cannot be negative';
+  if (trimmedName.length > 255) {
+    errors.name = 'Snack name must be 255 characters or fewer';
+    nameInputRef.value?.focus();
     return;
   }
 
-  if (lowStockThreshold.value < 0) {
-    errors.threshold = 'Threshold cannot be negative';
+  if (quantity.value === undefined || quantity.value === null || isNaN(quantity.value) || quantity.value < 0) {
+    errors.quantity = 'Quantity must be 0 or greater';
+    return;
+  }
+
+  if (lowStockThreshold.value === undefined || lowStockThreshold.value === null || isNaN(lowStockThreshold.value) || lowStockThreshold.value < 0) {
+    errors.threshold = 'Threshold must be 0 or greater';
     return;
   }
 
@@ -230,16 +261,22 @@ async function handleSubmit() {
     const created = await snacksApi.create({
       name: trimmedName,
       category: category.value,
-      quantity: quantity.value,
-      low_stock_threshold: lowStockThreshold.value,
+      quantity: Math.floor(quantity.value),
+      low_stock_threshold: Math.floor(lowStockThreshold.value),
     });
 
     toastSuccess(`Added "${created.name}" to the pantry!`);
     emit('created', created);
     emit('close');
   } catch (err: any) {
-    if (err?.code === 'SNACK_NAME_TAKEN' || err?.code === 'DUPLICATE_NAME') {
+    // Show inline server error for duplicate snack name
+    if (
+      err?.code === 'SNACK_NAME_TAKEN' ||
+      err?.code === 'DUPLICATE_NAME' ||
+      err?.message?.toLowerCase().includes('already exists')
+    ) {
       errors.name = 'A snack with this name already exists in the pantry';
+      nameInputRef.value?.focus();
     } else {
       globalError.value = err?.message || 'Failed to add snack. Please try again.';
     }
@@ -255,6 +292,7 @@ async function handleSubmit() {
   inset: 0;
   background-color: rgba(31, 27, 24, 0.6);
   backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -281,7 +319,7 @@ async function handleSubmit() {
 
 @keyframes scaleUp {
   from {
-    transform: scale(0.95) translateY(8px);
+    transform: scale(0.96) translateY(8px);
     opacity: 0;
   }
   to {
@@ -290,11 +328,51 @@ async function handleSubmit() {
   }
 }
 
+/* Mobile Bottom Sheet Style */
+@media (max-width: 640px) {
+  .modal-backdrop {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .modal-dialog--sheet {
+    max-width: 100%;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: slideUpSheet 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    padding-bottom: env(safe-area-inset-bottom, 16px);
+  }
+
+  @keyframes slideUpSheet {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+
+  .modal-handle-bar {
+    width: 40px;
+    height: 5px;
+    background-color: rgba(31, 27, 24, 0.2);
+    border-radius: var(--radius-full);
+    margin: 10px auto 4px;
+    display: block;
+  }
+}
+
+.modal-handle-bar {
+  display: none;
+}
+
 .modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-5) var(--space-6);
+  padding: var(--space-4) var(--space-6);
   background: var(--color-cream);
   border-bottom: 1px solid rgba(31, 27, 24, 0.08);
 }
@@ -501,7 +579,8 @@ async function handleSubmit() {
 
 @media (prefers-reduced-motion: reduce) {
   .modal-backdrop,
-  .modal-dialog {
+  .modal-dialog,
+  .modal-dialog--sheet {
     animation: none;
   }
 }

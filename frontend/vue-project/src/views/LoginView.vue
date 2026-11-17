@@ -8,7 +8,7 @@
         aria-hidden="true"
       >
         <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M16 4L18 12L26 14L18 16L16 24L14 16L6 14L14 12L16 4Z" fill="#E4472B" opacity="0.6"/>
+          <path d="M16 4L18 12L26 14L18 16L16 24L14 16L6 14L14 12L16 4Z" fill="#490982" opacity="0.6"/>
         </svg>
       </div>
       <div 
@@ -17,7 +17,7 @@
         aria-hidden="true"
       >
         <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M16 4L18 12L26 14L18 16L16 24L14 16L6 14L14 12L16 4Z" fill="#F7B733" opacity="0.5"/>
+          <path d="M16 4L18 12L26 14L18 16L16 24L14 16L6 14L14 12L16 4Z" fill="#9B51E0" opacity="0.5"/>
         </svg>
       </div>
       <div 
@@ -26,7 +26,7 @@
         aria-hidden="true"
       >
         <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M16 4L18 12L26 14L18 16L16 24L14 16L6 14L14 12L16 4Z" fill="#F58A1F" opacity="0.4"/>
+          <path d="M16 4L18 12L26 14L18 16L16 24L14 16L6 14L14 12L16 4Z" fill="#6816B3" opacity="0.4"/>
         </svg>
       </div>
       
@@ -117,11 +117,11 @@
         <div class="login-view__demo-accounts">
           <div class="login-view__demo-account">
             <span class="login-view__demo-role badge badge-stocked">Admin</span>
-            <span class="login-view__demo-email">admin@snackoverflow.test</span>
+            <span class="login-view__demo-email">admin@snackoverflow.com</span>
           </div>
           <div class="login-view__demo-account">
             <span class="login-view__demo-role badge badge-running-low">Member</span>
-            <span class="login-view__demo-email">member@snackoverflow.test</span>
+            <span class="login-view__demo-email">member@snackoverflow.com</span>
           </div>
         </div>
         <p class="login-view__demo-note">Use any password for demo accounts</p>
@@ -256,7 +256,7 @@ async function handleSubmit() {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(135deg, var(--color-cream) 0%, var(--color-peach) 100%);
+  background: linear-gradient(135deg, #FFFFFF 0%, #F5ECFC 100%);
 }
 
 /* Hero section */
@@ -347,8 +347,8 @@ async function handleSubmit() {
 
 .login-view__input:focus {
   outline: none;
-  border-color: var(--color-tomato);
-  box-shadow: 0 0 0 3px rgba(228, 71, 43, 0.1);
+  border-color: #490982;
+  box-shadow: 0 0 0 3px rgba(73, 9, 130, 0.15);
 }
 
 .login-view__input--error {

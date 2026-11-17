@@ -17,7 +17,12 @@ from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from sqlalchemy.exc import IntegrityError
 
-app = FastAPI(title="Snack Overflow API")
+app = FastAPI(
+    title="Snack Overflow API",
+    docs_url="/docs" if settings.ENABLE_DOCS else None,
+    redoc_url="/redoc" if settings.ENABLE_DOCS else None,
+    openapi_url="/openapi.json" if settings.ENABLE_DOCS else None,
+)
 
 # CORS configuration
 origins = [origin.strip() for origin in settings.CORS_ORIGINS.split(",")]

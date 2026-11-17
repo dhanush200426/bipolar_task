@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Field, ValidationError
+from pydantic import Field, field_validator
 
 
 class Settings(BaseSettings):
@@ -14,6 +14,22 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=60, description="Access token expiration in minutes")
     CORS_ORIGINS: str = Field(default="http://localhost:5173", description="Comma-separated CORS origins")
     ENV: str = Field(default="development", description="Environment (development/production)")
+    ENABLE_DOCS: bool = Field(default=True, description="Enable /docs and /redoc OpenAPI documentation")
+
+    @field_validator("DATABASE_URL", mode="before")
+    @classmethod
+    def normalize_database_url(cls, v: str) -> str:
+        """
+        Normalize cloud provider PostgreSQL connection strings to psycopg 3 format.
+        Render, Heroku, Supabase, and Railway frequently supply postgres:// or postgresql:// schemes.
+        SQLAlchemy 2.0 with psycopg 3 requires postgresql+psycopg://.
+        """
+        if isinstance(v, str):
+            if v.startswith("postgres://"):
+                return v.replace("postgres://", "postgresql+psycopg://", 1)
+            elif v.startswith("postgresql://") and not v.startswith("postgresql+psycopg://"):
+                return v.replace("postgresql://", "postgresql+psycopg://", 1)
+        return v
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

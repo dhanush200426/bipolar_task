@@ -23,34 +23,34 @@ def seed_users(db: Session):
     member_password = os.getenv("SEED_MEMBER_PASSWORD", "member123")
     
     # Admin user
-    admin = db.query(User).filter(User.email == "admin@snackoverflow.test").first()
+    admin = db.query(User).filter(User.email == "admin@snackoverflow.com").first()
     if not admin:
         admin = User(
             id=str(uuid.uuid4()),
             name="Demo Admin",
-            email="admin@snackoverflow.test",
+            email="admin@snackoverflow.com",
             password_hash=hash_password(admin_password),
             role=UserRole.ADMIN
         )
         db.add(admin)
-        print("Created admin user: admin@snackoverflow.test")
+        print("Created admin user: admin@snackoverflow.com")
     else:
-        print("Admin user already exists: admin@snackoverflow.test")
+        print("Admin user already exists: admin@snackoverflow.com")
     
     # Member user
-    member = db.query(User).filter(User.email == "member@snackoverflow.test").first()
+    member = db.query(User).filter(User.email == "member@snackoverflow.com").first()
     if not member:
         member = User(
             id=str(uuid.uuid4()),
             name="Demo Member",
-            email="member@snackoverflow.test",
+            email="member@snackoverflow.com",
             password_hash=hash_password(member_password),
             role=UserRole.MEMBER
         )
         db.add(member)
-        print("Created member user: member@snackoverflow.test")
+        print("Created member user: member@snackoverflow.com")
     else:
-        print("Member user already exists: member@snackoverflow.test")
+        print("Member user already exists: member@snackoverflow.com")
     
     db.commit()
     return admin, member
@@ -118,8 +118,14 @@ def seed_votes(db: Session, admin_user: User, member_user: User, snacks: dict):
         ("Mixed Nuts", admin_user),  # This should be ignored
     ]
     
+    seen = set()
     for snack_name, user in vote_data:
         snack = snacks[snack_name]
+        key = (user.id, snack.id)
+        if key in seen:
+            print(f"Vote already added in batch: {user.email} -> {snack_name}")
+            continue
+        seen.add(key)
         existing = db.query(Vote).filter(
             Vote.user_id == user.id,
             Vote.snack_id == snack.id
@@ -146,8 +152,8 @@ def main():
         
         print("\n=== Seed Complete ===")
         print("Demo credentials:")
-        print("  Admin: admin@snackoverflow.test / admin123")
-        print("  Member: member@snackoverflow.test / member123")
+        print("  Admin: admin@snackoverflow.com / admin123")
+        print("  Member: member@snackoverflow.com / member123")
         
     except Exception as e:
         print(f"Error during seed: {e}")

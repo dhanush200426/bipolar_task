@@ -1,16 +1,26 @@
 :root {
-  /* Warm food palette */
-  --color-tomato: #E4472B;
-  --color-chili: #C8321A;
-  --color-orange: #F58A1F;
-  --color-golden: #F7B733;
-  --color-cream: #FFF8EE;
-  --color-peach: #FFE8CF;
-  --color-charcoal: #1F1B18;
-  --color-muted: #6B625B;
-  --color-success: #2E9E6B;
-  --color-danger: #D32F2F;
-  --color-warning: #F57C00;
+  /* ── Toven Purple (#490982) & White Theme ── */
+  --color-primary: #490982;
+  --color-primary-dark: #350661;
+  --color-primary-light: #6816B3;
+  --color-primary-tint: #F3EAFB;
+  --color-primary-subtle: rgba(73, 9, 130, 0.08);
+
+  /* Semantic mappings to preserve existing component references */
+  --color-tomato: #490982;           /* Primary brand button / accent */
+  --color-chili: #350661;            /* Primary dark hover */
+  --color-orange: #6816B3;           /* Secondary violet */
+  --color-golden: #9B51E0;           /* Highlight violet */
+  --color-cream: #FFFFFF;            /* Clean white page background */
+  --color-cream-tint: #FAF7FD;       /* Subtle off-white lavender tint */
+  --color-peach: #F1E8F8;            /* Soft lavender card background / border */
+  --color-charcoal: #190B2E;         /* Deep purple-black for sharp typography */
+  --color-muted: #6C5D82;            /* Slate-purple for secondary text */
+
+  /* Functional status colors */
+  --color-success: #10B981;
+  --color-danger: #EF4444;
+  --color-warning: #F59E0B;
 
   /* Status colors */
   --color-stocked: var(--color-success);
@@ -37,11 +47,11 @@
   --radius-2xl: 1.5rem;
   --radius-full: 9999px;
 
-  /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(31, 27, 24, 0.05);
-  --shadow-md: 0 4px 6px rgba(31, 27, 24, 0.07);
-  --shadow-lg: 0 10px 15px rgba(31, 27, 24, 0.1);
-  --shadow-xl: 0 20px 25px rgba(31, 27, 24, 0.15);
+  /* Shadows tuned for purple theme */
+  --shadow-sm: 0 1px 2px rgba(25, 11, 46, 0.04);
+  --shadow-md: 0 4px 10px rgba(73, 9, 130, 0.08);
+  --shadow-lg: 0 10px 20px rgba(73, 9, 130, 0.12);
+  --shadow-xl: 0 20px 30px rgba(73, 9, 130, 0.18);
 
   /* Typography */
   --font-display: 'Baloo 2', cursive;

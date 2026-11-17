@@ -1,31 +1,31 @@
 <template>
   <div class="snacks-view" ref="snacksViewRef">
-    <!-- Page Header (Scrolls away before tabs stick) -->
+    <!-- Page Header (Full scale across laptop) -->
     <header class="snacks-view__header">
       <div class="snacks-view__header-container">
         <div class="snacks-view__header-badge">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="header-badge__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="header-badge__icon">
             <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
             <line x1="3" y1="6" x2="21" y2="6" />
             <path d="M16 10a4 4 0 0 1-8 0" />
           </svg>
-          <span>Pantry Catalog</span>
+          <span>Pantry Vault</span>
         </div>
         <h1 class="snacks-view__title">Office Snack Vault</h1>
         <p class="snacks-view__subtitle">
-          Browse, vote for your favourites, and grab a snack before it's gone!
+          Browse all snacks, cast your votes, and fuel up. Everything in one unified catalog.
         </p>
       </div>
     </header>
 
-    <!-- Sticky Filter & Control Bar -->
+    <!-- Sticky Filter & Control Bar (Full-scale edge-to-edge across laptop) -->
     <nav
       class="snacks-view__sticky-bar"
       :class="{ 'snacks-view__sticky-bar--pinned': isScrolledPastHeader }"
       aria-label="Snack catalog filters"
     >
       <div class="snacks-view__sticky-container">
-        <!-- Top row of bar: Horizontally Scrollable Category Tabs with scroll snap -->
+        <!-- Top row of bar: Horizontally Scrollable Category Tabs -->
         <div class="snacks-view__tabs-wrapper" role="tablist" aria-label="Snack Categories">
           <button
             v-for="cat in categoryOptions"
@@ -42,8 +42,14 @@
           </button>
         </div>
 
-        <!-- Secondary row / Controls: Status filter, Search, and Sort -->
+        <!-- Secondary row / Controls: Status filter, Search, Sort, and Item Count -->
         <div class="snacks-view__controls-row">
+          <!-- Total Count Indicator -->
+          <div class="snacks-view__count-badge" v-if="!isLoading && !error">
+            <span class="count-num">{{ total }}</span>
+            <span class="count-label">{{ total === 1 ? 'snack' : 'snacks' }}</span>
+          </div>
+
           <!-- Debounced Search Input -->
           <div class="snacks-view__search-wrap">
             <svg
@@ -105,22 +111,24 @@
               id="sort-select"
               v-model="currentSortCombined"
               class="snacks-view__select"
-              aria-label="Sort snacks by"
+              aria-label="Sort snacks by field and direction"
               @change="onSortChange"
             >
-              <option value="name:asc">Name (A &rarr; Z)</option>
-              <option value="name:desc">Name (Z &rarr; A)</option>
-              <option value="quantity:desc">Quantity (High &rarr; Low)</option>
-              <option value="quantity:asc">Quantity (Low &rarr; High)</option>
-              <option value="votes:desc">Votes (Most Popular)</option>
-              <option value="votes:asc">Votes (Least Popular)</option>
+              <option value="name:asc">Name: A to Z</option>
+              <option value="name:desc">Name: Z to A</option>
+              <option value="quantity:desc">Stock: High to Low</option>
+              <option value="quantity:asc">Stock: Low to High</option>
+              <option value="votes:desc">Votes: Most Popular</option>
+              <option value="votes:asc">Votes: Least Popular</option>
+              <option value="created_at:desc">Newest Added</option>
+              <option value="created_at:asc">Oldest Added</option>
             </select>
           </div>
         </div>
       </div>
     </nav>
 
-    <!-- Main Content Area -->
+    <!-- Main Content Area (Full Scale Grid) -->
     <main class="snacks-view__main" ref="gridContainerRef">
       <div class="snacks-view__container">
         <!-- Loading State: Skeleton Grid -->
@@ -161,26 +169,33 @@
           </template>
         </EmptyState>
 
-        <!-- Snack Cards Grid -->
+        <!-- Snack Cards Grid: Unified All-In-One Page -->
         <div v-else class="snacks-grid" ref="cardsGridRef">
           <SnackCard
             v-for="snack in snacks"
             :key="snack.id"
             :snack="snack"
-            @update:snack="onSnackUpdated"
+            :is-admin="authStore.isAdmin"
+            :is-restocked="restockedSnackId === snack.id"
+            :is-deleting="deletingSnackId === snack.id"
+            @update:snack="onSnackUpdatedInList"
             @consumed="onSnackConsumed"
             @voted="onSnackVoted"
+            @edit="openEditModal"
+            @restock="openRestockModal"
+            @delete="openDeleteModal"
           />
         </div>
 
-        <!-- Pagination Controls -->
-        <Pagination
-          v-if="!isLoading && !error && total > 0"
-          :current-page="currentPage"
-          :total-pages="totalPages"
-          :total="total"
-          @change="onPageChange"
-        />
+        <!-- Single Page End Cap (Replaces 1,2,3 pagination) -->
+        <div v-if="!isLoading && !error && snacks.length > 0" class="snacks-view__all-loaded">
+          <div class="all-loaded-line"></div>
+          <div class="all-loaded-content">
+            <span class="all-loaded-dot"></span>
+            <span class="all-loaded-text">All {{ snacks.length }} items displayed on one page</span>
+          </div>
+          <div class="all-loaded-line"></div>
+        </div>
       </div>
     </main>
 
@@ -221,12 +236,32 @@
       </button>
     </aside>
 
-    <!-- Add Snack Modal (Admin only) -->
-    <AddSnackModal
-      :is-open="isAddModalOpen"
-      @close="isAddModalOpen = false"
-      @created="onSnackCreated"
-    />
+    <!-- Admin Modals (rendered ONLY when user is an admin) -->
+    <template v-if="authStore.isAdmin">
+      <AddSnackModal
+        :is-open="isAddModalOpen"
+        @close="isAddModalOpen = false"
+        @created="onSnackCreated"
+      />
+      <EditSnackModal
+        :is-open="isEditModalOpen"
+        :snack="selectedSnackForEdit"
+        @close="isEditModalOpen = false"
+        @updated="onSnackEdited"
+      />
+      <RestockModal
+        :is-open="isRestockModalOpen"
+        :snack="selectedSnackForRestock"
+        @close="isRestockModalOpen = false"
+        @restocked="onSnackRestocked"
+      />
+      <DeleteConfirmDialog
+        :is-open="isDeleteModalOpen"
+        :snack="selectedSnackForDelete"
+        @close="isDeleteModalOpen = false"
+        @deleted="onSnackDeleted"
+      />
+    </template>
   </div>
 </template>
 
@@ -238,10 +273,12 @@ import { snacksApi } from '../api/snacks';
 import { useAuthStore } from '../stores/auth';
 import { useToast } from '../composables/useToast';
 import SnackCard from '../components/SnackCard.vue';
-import Pagination from '../components/Pagination.vue';
 import EmptyState from '../components/EmptyState.vue';
 import ErrorState from '../components/ErrorState.vue';
 import AddSnackModal from '../components/AddSnackModal.vue';
+import EditSnackModal from '../components/EditSnackModal.vue';
+import RestockModal from '../components/RestockModal.vue';
+import DeleteConfirmDialog from '../components/DeleteConfirmDialog.vue';
 import gsap from 'gsap';
 
 const route = useRoute();
@@ -252,7 +289,7 @@ const { info: toastInfo } = useToast();
 // Category tab definitions
 const categoryOptions = [
   { label: 'All', value: '', icon: '🍪' },
-  { label: 'Sweet', value: 'sweet', icon: '🍩' },
+  { label: 'Sweet', value: 'sweet', icon: '🍫' },
   { label: 'Savoury', value: 'savoury', icon: '🥨' },
   { label: 'Drink', value: 'drink', icon: '☕' },
   { label: 'Healthy-ish', value: 'healthy-ish', icon: '🍏' },
@@ -269,8 +306,8 @@ const currentStatus = ref<string>('');
 const searchInput = ref<string>('');
 const sortBy = ref<'name' | 'quantity' | 'votes' | 'created_at'>('name');
 const sortOrder = ref<'asc' | 'desc'>('asc');
-const currentPage = ref<number>(1);
-const pageSize = ref<number>(12);
+// Load all items in one continuous list (no page-by-page 1,2,3)
+const pageSize = ref<number>(50);
 
 // Combined sort string helper for the select dropdown
 const currentSortCombined = computed({
@@ -291,7 +328,6 @@ const currentSortCombined = computed({
 // Response Data
 const snacks = ref<Snack[]>([]);
 const total = ref<number>(0);
-const totalPages = ref<number>(0);
 const isLoading = ref<boolean>(true);
 const error = ref<string>('');
 
@@ -300,8 +336,17 @@ let currentRequestId = 0;
 let abortController: AbortController | null = null;
 let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
-// Modal & Scroll State
+// Modal & Action State
 const isAddModalOpen = ref(false);
+const isEditModalOpen = ref(false);
+const selectedSnackForEdit = ref<Snack | null>(null);
+const isRestockModalOpen = ref(false);
+const selectedSnackForRestock = ref<Snack | null>(null);
+const restockedSnackId = ref<string | null>(null);
+const isDeleteModalOpen = ref(false);
+const selectedSnackForDelete = ref<Snack | null>(null);
+const deletingSnackId = ref<string | null>(null);
+
 const isScrolledPastHeader = ref(false);
 const snacksViewRef = ref<HTMLElement | null>(null);
 const gridContainerRef = ref<HTMLElement | null>(null);
@@ -320,9 +365,6 @@ function parseQueryParams() {
   const qSearch = (route.query.q as string) || '';
   searchInput.value = qSearch;
 
-  const qPage = parseInt(route.query.page as string, 10);
-  currentPage.value = !isNaN(qPage) && qPage >= 1 ? qPage : 1;
-
   const qSortBy = (route.query.sort_by as string) || 'name';
   sortBy.value = (VALID_SORT_COLUMNS.has(qSortBy) ? qSortBy : 'name') as any;
 
@@ -332,8 +374,7 @@ function parseQueryParams() {
 
 /**
  * Push current filter state to the URL.
- * Uses replaceState when searching or toggling filters to prevent cluttering history,
- * but pushState for explicit pagination clicks.
+ * All items live on a single page, so page number is omitted.
  */
 function syncUrl(replace = true) {
   const query: Record<string, string> = {};
@@ -341,7 +382,6 @@ function syncUrl(replace = true) {
   if (currentCategory.value) query.category = currentCategory.value;
   if (currentStatus.value) query.status = currentStatus.value;
   if (searchInput.value.trim()) query.q = searchInput.value.trim();
-  if (currentPage.value > 1) query.page = currentPage.value.toString();
   if (sortBy.value !== 'name') query.sort_by = sortBy.value;
   if (sortOrder.value !== 'asc') query.order = sortOrder.value;
 
@@ -369,7 +409,7 @@ async function fetchSnacks() {
   try {
     const res = await snacksApi.list(
       {
-        page: currentPage.value,
+        page: 1,
         page_size: pageSize.value,
         category: currentCategory.value || undefined,
         status: currentStatus.value || undefined,
@@ -387,7 +427,6 @@ async function fetchSnacks() {
 
     snacks.value = res.items || (res as any).snacks || [];
     total.value = res.total || 0;
-    totalPages.value = res.pages || 0;
 
     // Trigger stagger animation on entered cards
     nextTick(() => {
@@ -412,7 +451,6 @@ async function fetchSnacks() {
 // GSAP ENTRANCE ANIMATION
 // ---------------------------------------------------------------------------
 function animateCards() {
-  // Check for reduced motion preference
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
     return;
   }
@@ -443,19 +481,16 @@ function animateCards() {
 function selectCategory(category: string) {
   if (currentCategory.value === category) return;
   currentCategory.value = category;
-  currentPage.value = 1;
   syncUrl(false);
   fetchSnacks();
 }
 
 function onFilterChange() {
-  currentPage.value = 1;
   syncUrl(false);
   fetchSnacks();
 }
 
 function onSortChange() {
-  currentPage.value = 1;
   syncUrl(false);
   fetchSnacks();
 }
@@ -466,7 +501,6 @@ function onSearchInput() {
   }
 
   searchDebounceTimer = setTimeout(() => {
-    currentPage.value = 1;
     syncUrl(true);
     fetchSnacks();
   }, 300);
@@ -475,7 +509,6 @@ function onSearchInput() {
 function clearSearch() {
   if (!searchInput.value) return;
   searchInput.value = '';
-  currentPage.value = 1;
   syncUrl(true);
   fetchSnacks();
 }
@@ -486,99 +519,89 @@ function clearAllFilters() {
   searchInput.value = '';
   sortBy.value = 'name';
   sortOrder.value = 'asc';
-  currentPage.value = 1;
   syncUrl(false);
   fetchSnacks();
 }
 
-function onPageChange(newPage: number) {
-  currentPage.value = newPage;
-  syncUrl(false);
-  fetchSnacks();
-
-  // Smooth scroll to top of grid
-  gridContainerRef.value?.scrollIntoView({ behavior: 'smooth' });
-}
-
 // ---------------------------------------------------------------------------
-// EVENT HANDLERS FROM CARDS & MODAL
+// CARD MUTATION & CONCURRENCY EVENT HANDLERS
 // ---------------------------------------------------------------------------
-function onSnackUpdated(updated: Snack) {
+function onSnackUpdatedInList(updated: Snack) {
   const index = snacks.value.findIndex((s) => s.id === updated.id);
-  if (index > -1) {
+  if (index !== -1) {
     snacks.value[index] = updated;
   }
 }
 
-function onSnackConsumed(updated: Snack, amount: number) {
-  onSnackUpdated(updated);
+function onSnackConsumed(updated: Snack) {
+  onSnackUpdatedInList(updated);
 }
 
 function onSnackVoted(updated: Snack) {
-  onSnackUpdated(updated);
-}
-
-function onSnackCreated(created: Snack) {
-  // If the created snack matches current filters, prepend to list
-  snacks.value.unshift(created);
-  total.value++;
-  // Trigger animation for newly added item
-  nextTick(() => {
-    animateCards();
-  });
+  onSnackUpdatedInList(updated);
 }
 
 // ---------------------------------------------------------------------------
-// SNACK OF THE WEEK (FAB MEMBER ACTION)
+// ADMIN MODAL HANDLERS
 // ---------------------------------------------------------------------------
-async function goToSnackOfTheWeek() {
-  try {
-    const summary = await snacksApi.summary();
-    const sotw = summary?.snack_of_the_week;
+function openEditModal(snack: Snack) {
+  selectedSnackForEdit.value = snack;
+  isEditModalOpen.value = true;
+}
 
-    if (!sotw || !sotw.name) {
-      toastInfo('No Snack of the Week crowned yet! Keep voting.');
-      return;
+function openRestockModal(snack: Snack) {
+  selectedSnackForRestock.value = snack;
+  isRestockModalOpen.value = true;
+}
+
+function openDeleteModal(snack: Snack) {
+  selectedSnackForDelete.value = snack;
+  isDeleteModalOpen.value = true;
+}
+
+async function onSnackCreated(created: Snack) {
+  await fetchSnacks();
+}
+
+function onSnackEdited(updated: Snack) {
+  onSnackUpdatedInList(updated);
+}
+
+function onSnackRestocked(updated: Snack) {
+  onSnackUpdatedInList(updated);
+  restockedSnackId.value = updated.id;
+  setTimeout(() => {
+    if (restockedSnackId.value === updated.id) {
+      restockedSnackId.value = null;
     }
+  }, 2000);
+}
 
-    // Check if card is on current page
-    const cardEl = document.getElementById(`snack-card-${sotw.id}`);
-    if (cardEl) {
-      cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      // Add a quick pulse highlight
-      cardEl.animate(
-        [
-          { boxShadow: '0 0 0 0 rgba(228, 71, 43, 0.7)' },
-          { boxShadow: '0 0 0 16px rgba(228, 71, 43, 0)' },
-          { boxShadow: '0 0 0 0 rgba(228, 71, 43, 0)' },
-        ],
-        { duration: 1000 }
-      );
-      toastInfo(`Found Snack of the Week: ${sotw.name}!`);
-    } else {
-      // Filter directly by searching for the Snack of the Week
-      searchInput.value = sotw.name;
-      currentCategory.value = '';
-      currentStatus.value = '';
-      currentPage.value = 1;
-      syncUrl(false);
-      await fetchSnacks();
-      toastInfo(`Showing Snack of the Week: ${sotw.name}`);
-    }
-  } catch {
-    // If failed, navigate to dashboard showcase
-    router.push('/');
-  }
+async function onSnackDeleted(snackId: string) {
+  deletingSnackId.value = snackId;
+  setTimeout(async () => {
+    snacks.value = snacks.value.filter((s) => s.id !== snackId);
+    total.value = Math.max(0, total.value - 1);
+    deletingSnackId.value = null;
+    await fetchSnacks();
+  }, 350);
+}
+
+function goToSnackOfTheWeek() {
+  router.push('/#snack-of-the-week');
 }
 
 // ---------------------------------------------------------------------------
-// SCROLL LISTENER (STICKY BAR SHADOW)
+// SCROLL LISTENER FOR STICKY BAR
 // ---------------------------------------------------------------------------
 function handleWindowScroll() {
-  isScrolledPastHeader.value = window.scrollY > 80;
+  const scrollY = window.scrollY;
+  isScrolledPastHeader.value = scrollY > 120;
 }
 
-// Watch route changes (for browser back/forward buttons)
+// ---------------------------------------------------------------------------
+// WATCH ROUTE & LIFECYCLE
+// ---------------------------------------------------------------------------
 watch(
   () => route.query,
   () => {
@@ -609,31 +632,29 @@ onBeforeUnmount(() => {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: var(--color-cream);
+  background-color: #FFFFFF;
   padding-bottom: var(--space-16);
 }
 
+/* Full-scale container across laptop */
 .snacks-view__container {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 0 var(--space-4);
   width: 100%;
-}
-
-@media (min-width: 640px) {
-  .snacks-view__container {
-    padding: 0 var(--space-6);
-  }
+  max-width: 100%;
+  margin: 0;
+  padding: 0 clamp(1.25rem, 3.5vw, 3.5rem);
+  box-sizing: border-box;
 }
 
 /* Page Header */
 .snacks-view__header {
-  padding: var(--space-8) var(--space-4) var(--space-6);
+  padding: 3rem clamp(1.25rem, 3.5vw, 3.5rem) 2rem;
   text-align: center;
+  background: linear-gradient(180deg, #F6EFFC 0%, #FFFFFF 100%);
+  border-bottom: 1px solid #EADBFA;
 }
 
 .snacks-view__header-container {
-  max-width: 720px;
+  max-width: 800px;
   margin: 0 auto;
 }
 
@@ -641,14 +662,15 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 12px;
+  padding: 6px 14px;
   border-radius: var(--radius-full);
-  background-color: var(--color-peach);
-  color: var(--color-chili);
+  background-color: #F1E8F8;
+  color: #490982;
+  border: 1px solid #E3D1F5;
   font-size: var(--text-xs);
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   margin-bottom: var(--space-3);
 }
 
@@ -659,56 +681,56 @@ onBeforeUnmount(() => {
 
 .snacks-view__title {
   font-family: var(--font-display);
-  font-size: var(--text-3xl);
+  font-size: clamp(2rem, 3.5vw, 3rem);
   font-weight: 800;
-  color: var(--color-charcoal);
+  color: #490982;
   margin: 0 0 var(--space-2);
   line-height: 1.15;
 }
 
 .snacks-view__subtitle {
   font-size: var(--text-base);
-  color: var(--color-muted);
+  color: #6C5D82;
   margin: 0;
+  line-height: 1.6;
 }
 
 /* Sticky Filter & Control Bar */
 .snacks-view__sticky-bar {
   position: sticky;
-  top: 64px; /* Pins under AppShell top navbar */
+  top: 60px;
   z-index: 30;
-  background-color: rgba(255, 248, 238, 0.95);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-top: 1px solid rgba(31, 27, 24, 0.06);
-  border-bottom: 1px solid rgba(31, 27, 24, 0.08);
-  transition: box-shadow var(--transition-base), border-color var(--transition-base);
+  background-color: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid #EADBFA;
+  transition: all var(--transition-base);
 }
 
 .snacks-view__sticky-bar--pinned {
-  box-shadow: 0 6px 16px rgba(31, 27, 24, 0.08);
-  border-bottom-color: rgba(31, 27, 24, 0.12);
+  box-shadow: 0 6px 18px rgba(73, 9, 130, 0.08);
 }
 
 .snacks-view__sticky-container {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: var(--space-3) var(--space-4);
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: var(--space-3) clamp(1.25rem, 3.5vw, 3.5rem);
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+  box-sizing: border-box;
 }
 
-@media (min-width: 900px) {
+@media (min-width: 960px) {
   .snacks-view__sticky-container {
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    padding: var(--space-3) var(--space-6);
   }
 }
 
-/* Category Tabs (Horizontally scrollable with scroll-snap) */
+/* Category Tabs */
 .snacks-view__tabs-wrapper {
   display: flex;
   align-items: center;
@@ -718,7 +740,7 @@ onBeforeUnmount(() => {
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   -ms-overflow-style: none;
-  padding: 2px 0;
+  padding: 4px 0;
 }
 
 .snacks-view__tabs-wrapper::-webkit-scrollbar {
@@ -728,35 +750,34 @@ onBeforeUnmount(() => {
 .snacks-view__tab-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   height: 42px;
-  padding: 0 var(--space-4);
+  padding: 0 1.25rem;
   border-radius: var(--radius-full);
-  border: 1.5px solid rgba(31, 27, 24, 0.12);
-  background-color: #ffffff;
-  color: var(--color-charcoal);
+  border: 1.5px solid #E6D7F6;
+  background-color: #FFFFFF;
+  color: #190B2E;
   font-size: var(--text-sm);
   font-weight: 600;
   cursor: pointer;
   scroll-snap-align: start;
   flex-shrink: 0;
   transition: all var(--transition-fast);
-  min-height: var(--touch-target, 44px);
   user-select: none;
 }
 
 .snacks-view__tab-btn:hover:not(.snacks-view__tab-btn--active) {
-  background-color: var(--color-peach);
-  border-color: rgba(228, 71, 43, 0.3);
-  color: var(--color-tomato);
+  background-color: #F8F4FC;
+  border-color: #490982;
+  color: #490982;
 }
 
 .snacks-view__tab-btn--active {
-  background-color: var(--color-tomato);
-  border-color: var(--color-chili);
-  color: #ffffff;
+  background-color: #490982;
+  border-color: #350661;
+  color: #FFFFFF;
   font-weight: 700;
-  box-shadow: 0 2px 6px rgba(228, 71, 43, 0.35);
+  box-shadow: 0 4px 12px rgba(73, 9, 130, 0.28);
 }
 
 .snacks-view__tab-icon {
@@ -767,7 +788,7 @@ onBeforeUnmount(() => {
 .snacks-view__controls-row {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-3);
   flex-wrap: wrap;
 }
 
@@ -777,13 +798,38 @@ onBeforeUnmount(() => {
   }
 }
 
+/* Item Count Badge */
+.snacks-view__count-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.85rem;
+  background-color: #F3EAFB;
+  border-radius: var(--radius-full);
+  border: 1px solid #E3D1F5;
+  white-space: nowrap;
+}
+
+.count-num {
+  font-weight: 700;
+  color: #490982;
+  font-size: var(--text-sm);
+}
+
+.count-label {
+  font-size: 0.75rem;
+  color: #6C5D82;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
 /* Search input */
 .snacks-view__search-wrap {
   position: relative;
   display: flex;
   align-items: center;
   flex: 1;
-  min-width: 170px;
+  min-width: 200px;
 }
 
 .snacks-view__search-icon {
@@ -791,46 +837,46 @@ onBeforeUnmount(() => {
   left: 12px;
   width: 16px;
   height: 16px;
-  color: var(--color-muted);
+  color: #6C5D82;
   pointer-events: none;
 }
 
 .snacks-view__search-input {
   width: 100%;
   height: 42px;
-  padding: 0 32px 0 36px;
-  border-radius: var(--radius-md);
-  border: 1.5px solid rgba(31, 27, 24, 0.12);
-  background-color: #ffffff;
+  padding: 0 32px 0 38px;
+  border-radius: var(--radius-full);
+  border: 1.5px solid #E6D7F6;
+  background-color: #FFFFFF;
   font-size: var(--text-sm);
-  color: var(--color-charcoal);
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  color: #190B2E;
+  transition: all var(--transition-fast);
 }
 
 .snacks-view__search-input:focus {
   outline: none;
-  border-color: var(--color-tomato);
-  box-shadow: 0 0 0 3px rgba(228, 71, 43, 0.15);
+  border-color: #490982;
+  box-shadow: 0 0 0 3px rgba(73, 9, 130, 0.15);
 }
 
 .snacks-view__search-clear {
   position: absolute;
-  right: 8px;
+  right: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border: none;
   background: transparent;
-  color: var(--color-muted);
+  color: #6C5D82;
   cursor: pointer;
   border-radius: var(--radius-full);
 }
 
 .snacks-view__search-clear:hover {
-  color: var(--color-charcoal);
-  background: rgba(31, 27, 24, 0.06);
+  color: #190B2E;
+  background: #F3EAFB;
 }
 
 .snacks-view__search-clear svg {
@@ -846,34 +892,34 @@ onBeforeUnmount(() => {
 
 .snacks-view__select {
   height: 42px;
-  padding: 0 var(--space-4);
-  background-color: #ffffff;
-  border: 1.5px solid rgba(31, 27, 24, 0.12);
-  border-radius: var(--radius-md);
+  padding: 0 1rem;
+  background-color: #FFFFFF;
+  border: 1.5px solid #E6D7F6;
+  border-radius: var(--radius-full);
   font-size: var(--text-sm);
   font-weight: 600;
-  color: var(--color-charcoal);
+  color: #190B2E;
   cursor: pointer;
-  transition: border-color var(--transition-fast);
+  transition: all var(--transition-fast);
 }
 
 .snacks-view__select:focus {
   outline: none;
-  border-color: var(--color-tomato);
-  box-shadow: 0 0 0 3px rgba(228, 71, 43, 0.15);
+  border-color: #490982;
+  box-shadow: 0 0 0 3px rgba(73, 9, 130, 0.15);
 }
 
 /* Main Content Area */
 .snacks-view__main {
   flex: 1;
-  padding-top: var(--space-8);
+  padding-top: var(--space-6);
 }
 
-/* Responsive Grid: 1 col mobile, 2-3 col tablet, 3-4 col desktop */
+/* Responsive Grid across laptop */
 .snacks-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: var(--space-6);
+  gap: 1.75rem;
 }
 
 @media (min-width: 600px) {
@@ -882,44 +928,89 @@ onBeforeUnmount(() => {
   }
 }
 
-@media (min-width: 960px) {
+@media (min-width: 992px) {
   .snacks-grid {
     grid-template-columns: repeat(3, 1fr);
   }
 }
 
-@media (min-width: 1240px) {
+@media (min-width: 1300px) {
   .snacks-grid {
     grid-template-columns: repeat(4, 1fr);
   }
+}
+
+@media (min-width: 1600px) {
+  .snacks-grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+
+/* All-Loaded Single Page Footer */
+.snacks-view__all-loaded {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-top: 3.5rem;
+  margin-bottom: 2rem;
+}
+
+.all-loaded-line {
+  flex: 1;
+  height: 1px;
+  background-color: #E6D7F6;
+}
+
+.all-loaded-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 1rem;
+  background-color: #FAF7FD;
+  border: 1px solid #E6D7F6;
+  border-radius: var(--radius-full);
+}
+
+.all-loaded-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #490982;
+}
+
+.all-loaded-text {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #6C5D82;
 }
 
 /* Clear Filters Button in EmptyState */
 .snacks-view__clear-filters-btn {
   height: 44px;
   padding: 0 var(--space-6);
-  background-color: var(--color-tomato);
-  color: #ffffff;
+  background-color: #490982;
+  color: #FFFFFF;
   border: none;
   border-radius: var(--radius-md);
   font-size: var(--text-sm);
   font-weight: 700;
   cursor: pointer;
   transition: all var(--transition-fast);
-  box-shadow: 0 2px 4px rgba(228, 71, 43, 0.3);
+  box-shadow: 0 4px 12px rgba(73, 9, 130, 0.25);
 }
 
 .snacks-view__clear-filters-btn:hover {
-  background-color: var(--color-chili);
+  background-color: #350661;
   transform: translateY(-1px);
 }
 
 /* Skeleton Loading Grid */
 .skeleton-card {
-  background: #ffffff;
+  background: #FFFFFF;
   border-radius: var(--radius-xl);
   padding: var(--space-5);
-  border: 1.5px solid rgba(31, 27, 24, 0.06);
+  border: 1.5px solid #F0E6F8;
   display: flex;
   flex-direction: column;
   height: 320px;
@@ -961,9 +1052,9 @@ onBeforeUnmount(() => {
 .skeleton-shimmer {
   background: linear-gradient(
     90deg,
-    rgba(31, 27, 24, 0.05) 0%,
-    rgba(31, 27, 24, 0.1) 50%,
-    rgba(31, 27, 24, 0.05) 100%
+    rgba(73, 9, 130, 0.04) 0%,
+    rgba(73, 9, 130, 0.08) 50%,
+    rgba(73, 9, 130, 0.04) 100%
   );
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
@@ -995,14 +1086,14 @@ onBeforeUnmount(() => {
   font-size: var(--text-sm);
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(31, 27, 24, 0.2);
+  box-shadow: 0 4px 16px rgba(73, 9, 130, 0.35);
   transition: transform var(--transition-fast), box-shadow var(--transition-fast);
   user-select: none;
 }
 
 .snacks-view__fab:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(31, 27, 24, 0.28);
+  box-shadow: 0 8px 24px rgba(73, 9, 130, 0.45);
 }
 
 .snacks-view__fab:active {
@@ -1011,42 +1102,42 @@ onBeforeUnmount(() => {
 
 /* Admin FAB */
 .snacks-view__fab--admin {
-  background-color: var(--color-tomato);
-  color: #ffffff;
+  background-color: #490982;
+  color: #FFFFFF;
 }
 
 .snacks-view__fab--admin .snacks-view__fab-pulse {
   position: absolute;
   inset: 0;
   border-radius: var(--radius-full);
-  animation: fabRingTomato 2.2s infinite ease-out;
+  animation: fabRingPurple 2.2s infinite ease-out;
   pointer-events: none;
 }
 
-@keyframes fabRingTomato {
-  0% { box-shadow: 0 0 0 0 rgba(228, 71, 43, 0.55); }
-  70% { box-shadow: 0 0 0 14px rgba(228, 71, 43, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(228, 71, 43, 0); }
+@keyframes fabRingPurple {
+  0% { box-shadow: 0 0 0 0 rgba(73, 9, 130, 0.55); }
+  70% { box-shadow: 0 0 0 16px rgba(73, 9, 130, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(73, 9, 130, 0); }
 }
 
 /* Member FAB */
 .snacks-view__fab--member {
-  background-color: var(--color-golden);
-  color: var(--color-charcoal);
+  background-color: #9B51E0;
+  color: #FFFFFF;
 }
 
 .snacks-view__fab--member .snacks-view__fab-pulse {
   position: absolute;
   inset: 0;
   border-radius: var(--radius-full);
-  animation: fabRingGolden 2.2s infinite ease-out;
+  animation: fabRingViolet 2.2s infinite ease-out;
   pointer-events: none;
 }
 
-@keyframes fabRingGolden {
-  0% { box-shadow: 0 0 0 0 rgba(247, 183, 51, 0.6); }
-  70% { box-shadow: 0 0 0 14px rgba(247, 183, 51, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(247, 183, 51, 0); }
+@keyframes fabRingViolet {
+  0% { box-shadow: 0 0 0 0 rgba(155, 81, 224, 0.6); }
+  70% { box-shadow: 0 0 0 16px rgba(155, 81, 224, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(155, 81, 224, 0); }
 }
 
 .snacks-view__fab-icon {
@@ -1069,12 +1160,6 @@ onBeforeUnmount(() => {
 @media (prefers-reduced-motion: reduce) {
   .skeleton-shimmer {
     animation: none;
-  }
-  .snacks-view__fab-pulse {
-    animation: none;
-  }
-  .snacks-view__fab:hover {
-    transform: none;
   }
 }
 </style>

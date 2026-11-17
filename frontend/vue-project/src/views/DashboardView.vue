@@ -568,8 +568,9 @@ watch(summary, () => {
 /* Hero Section */
 .dashboard-view__hero {
   position: relative;
-  min-height: 60vh;
-  background: linear-gradient(135deg, var(--color-cream) 0%, var(--color-peach) 100%);
+  min-height: 55vh;
+  background: linear-gradient(135deg, #FFFFFF 0%, #F6EFFC 100%);
+  border-bottom: 1px solid #EADBFA;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -648,11 +649,13 @@ watch(summary, () => {
   height: 100%;
 }
 
-/* Container */
+/* Container - Full-scale edge-to-edge on laptop */
 .dashboard-view__container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: var(--space-6);
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: var(--space-6) clamp(1.25rem, 3.5vw, 3.5rem);
+  box-sizing: border-box;
 }
 
 /* Summary Cards */

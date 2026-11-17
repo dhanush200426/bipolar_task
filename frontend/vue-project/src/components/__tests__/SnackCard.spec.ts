@@ -184,4 +184,40 @@ describe('SnackCard.vue', () => {
       voted_by_me: true,
     });
   });
+
+  it('does NOT render admin toolbar when isAdmin is false', () => {
+    const wrapper = mount(SnackCard, {
+      props: {
+        snack: mockStockedSnack,
+        isAdmin: false,
+      },
+    });
+
+    expect(wrapper.find('.snack-card__admin-bar').exists()).toBe(false);
+    expect(wrapper.find('.admin-btn--restock').exists()).toBe(false);
+    expect(wrapper.find('.admin-btn--delete').exists()).toBe(false);
+  });
+
+  it('renders admin toolbar and emits edit, restock, delete when isAdmin is true', async () => {
+    const wrapper = mount(SnackCard, {
+      props: {
+        snack: mockStockedSnack,
+        isAdmin: true,
+      },
+    });
+
+    expect(wrapper.find('.snack-card__admin-bar').exists()).toBe(true);
+
+    const restockBtn = wrapper.find('.admin-btn--restock');
+    await restockBtn.trigger('click');
+    expect(wrapper.emitted('restock')?.[0]?.[0]).toEqual(mockStockedSnack);
+
+    const editBtn = wrapper.find('.admin-btn--icon');
+    await editBtn.trigger('click');
+    expect(wrapper.emitted('edit')?.[0]?.[0]).toEqual(mockStockedSnack);
+
+    const deleteBtn = wrapper.find('.admin-btn--delete');
+    await deleteBtn.trigger('click');
+    expect(wrapper.emitted('delete')?.[0]?.[0]).toEqual(mockStockedSnack);
+  });
 });

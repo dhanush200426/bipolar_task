@@ -2,6 +2,12 @@
 
 A production-minded office pantry tracker for managing snacks and inventory.
 
+## Live Demo URLs (Placeholders)
+- **Frontend Web App**: `https://snackoverflow.onrender.com` *(or your custom domain)*
+- **Backend API**: `https://snackoverflow-api.onrender.com`
+- **Swagger Interactive API Docs**: `https://snackoverflow-api.onrender.com/docs`
+- **Health Check**: `https://snackoverflow-api.onrender.com/health`
+
 ## Screenshots
 
 *(Screenshots to be added - showing the dashboard with summary cards, snack of the week showcase, and running low strip)*
@@ -24,9 +30,18 @@ A production-minded office pantry tracker for managing snacks and inventory.
 - **Tactile Consume Stepper**: Quantity stepper (`1` to `min(quantity, 10)`), loading spinner to prevent double-submit, checkmark success morph, and live quantity countdown.
 - **Concurrency 409 Resilience**: Catches `INSUFFICIENT_STOCK` (409), shakes the card with CSS keyframe animation, alerts the user with a toast, and refreshes the card with the latest server data.
 - **Interactive Voting**: Toggle heart with pop micro-interaction, live vote count sync, and conflict recovery against `ALREADY_VOTED` and `VOTE_NOT_FOUND`.
-- **Pagination**: Numbered page selector with prev/next controls, disabled boundary states, count summary, and automatic smooth scroll to grid top.
+- **Unified Single-Page Catalog**: Displays all snacks on a single continuous, responsive grid with live total count, eliminating friction from multi-page 1, 2, 3 navigation.
 - **Floating Action Button (FAB)**: Safe-area-aware pulsing FAB providing "+ Add snack" for Admins (opens modal) and "Snack of the Week" shortcut for Members.
 - **State Handling**: Shimmering skeleton cards during load, clear-filter empty state, and error recovery view.
+
+### Admin Interface (Role-Gated)
+- **Strict Role-Gating**: Admin controls (Add Snack FAB, card Edit, Restock, and Delete buttons) are rendered ONLY when `authStore.isAdmin` is true. For regular members, none of these controls exist in the DOM, and all administrative endpoints strictly enforce backend `require_admin` authorization.
+- **Add Snack Modal**: Complete form for name, category, initial quantity, and low-stock threshold with client-side validation mirroring backend constraints and inline server error display (e.g. `SNACK_NAME_TAKEN`).
+- **Edit Snack Modal**: Allows modifying name, category, and low-stock alert threshold ONLY. Quantity is intentionally excluded to enforce pantry inventory integrity and require Restock activities.
+- **Restock Modal**: Inventory restock input (1 - 10,000 packets) with rapid selection chips (`+5`, `+10`, `+20`) and a green glow highlight animation on the restocked snack card.
+- **Delete Confirmation Dialog**: Accessible, focus-trapped confirmation dialog with clear destructive styling, removal animation, toast notification, and graceful 404 handling if the snack was already removed.
+- **List Consistency Guarantee**: Automatically refetches the current page after every creation, update, restock, or deletion. If deleting the last item on a page leaves it empty, automatically transitions to the previous page.
+- **Universal Modal Accessibility & Mobile Drawers**: All modals feature `role="dialog"`, `aria-modal="true"`, focus trapping with Tab cycle, Escape key dismissal, backdrop dismissal, scrollbar compensation to eliminate body scroll jump, and adaptive responsive styling (centered dialogs on desktop, bottom sheet drawers on phones).
 
 ### Authentication
 - JWT-based authentication with role-based access control (Admin/Member)
@@ -35,12 +50,12 @@ A production-minded office pantry tracker for managing snacks and inventory.
 - Protected routes with redirect preservation
 
 ### Design & UX
-- Warm food-themed color palette (tomato, chili, orange, golden, cream, peach)
-- Self-hosted fonts (Baloo 2 for headings, Inter for body)
-- GSAP + ScrollTrigger animations with reduced motion support
-- Responsive design with mobile-first approach
-- Accessible with WCAG-contrast-safe colors and 44px minimum touch targets
-- Global error safety net to prevent white screens
+- **Toven-Inspired Purple & White Palette**: Primary royal purple (`#490982`), deep hover purple (`#350661`), accent violet (`#6816B3`), and crisp pure white background (`#FFFFFF`) with lavender surfaces (`#F1E8F8`).
+- **Full-Scale Edge-to-Edge Header & Footer**: Widescreen-optimized navigation bar and rich 4-column footer featuring office location, 24/7 hours, social media links (LinkedIn, GitHub, X, Instagram), and live pantry inventory status.
+- **Unified Single-Page Catalog**: Frictionless browsing where all pantry snacks load continuously on a single page with a live count badge, eliminating segmented 1, 2, 3 page navigation.
+- **Typography & Motion**: Self-hosted fonts (Baloo 2 for headings, Inter for body) and GSAP micro-animations with full `prefers-reduced-motion` accessibility support.
+- **Accessibility**: WCAG AAA/AA contrast-safe typography, 44px minimum touch targets, and full modal focus trapping.
+- **Global Error Safety Net**: Intercepts network disconnects and server cold-starts, rendering styled recovery states rather than blank white screens.
 
 ## Stack
 
@@ -76,11 +91,46 @@ A production-minded office pantry tracker for managing snacks and inventory.
 
 For a production app, consider httpOnly cookies with CSRF tokens, short-lived access tokens with refresh rotation, and Content Security Policy (CSP) headers to mitigate XSS.
 
-## Quick Start (Windows PowerShell)
+## Quick Start
+
+### Option 1: Docker (Recommended — One Command)
+
+Prerequisites:
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running
+
+1. **Configure environment**
+```powershell
+# Copy the example environment file
+Copy-Item .env.example .env
+```
+*(By default, `.env.example` is pre-configured with `SEED_ON_START=false`. Change to `SEED_ON_START=true` to automatically load sample demo snacks and users).*
+
+2. **Build and start all services**
+```powershell
+docker compose up --build
+```
+*(Add `-d` to run in detached/background mode).*
+
+3. **Access the application**
+- **Frontend**: http://localhost (port 80)
+- **Backend API**: http://localhost:8000
+- **Swagger Interactive API Docs**: http://localhost:8000/docs
+- **Health Check**: http://localhost:8000/health
+
+4. **Stop services**
+```powershell
+docker compose down
+```
+*(To wipe the database volume and reset: `docker compose down -v`)*
+
+---
+
+### Option 2: Manual Local Development (Virtualenv)
 
 ### Prerequisites
 - Python 3.11 or 3.12
-- Docker Desktop
+- Node.js 20+ (v22 recommended)
+- Docker Desktop (for PostgreSQL container)
 
 ### Backend Setup
 
@@ -99,36 +149,36 @@ pip install -r requirements.txt
 
 3. **Configure environment variables**
 ```powershell
-# Copy the example env file
+# In D:\bipolar_task\backend
 Copy-Item .env.example .env
 # Edit .env with your settings (at minimum, set JWT_SECRET to 32+ characters)
 ```
 
-4. **Start PostgreSQL**
+4. **Start PostgreSQL database**
 ```powershell
 cd D:\bipolar_task
 docker compose up -d db
 ```
 
-5. **Run the API**
+5. **Run database migrations & seed**
+```powershell
+cd D:\bipolar_task\backend
+& D:\bipolar_task\venv\Scripts\Activate.ps1
+alembic upgrade head
+python scripts/seed.py
+```
+
+6. **Run the API server**
 ```powershell
 cd D:\bipolar_task\backend
 & D:\bipolar_task\venv\Scripts\Activate.ps1
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-6. **Verify health**
+7. **Verify health**
 ```powershell
-# In another terminal or browser
 curl http://localhost:8000/health
 # Expected: {"status":"ok"}
-```
-
-7. **Run database migrations**
-```powershell
-cd D:\bipolar_task\backend
-& D:\bipolar_task\venv\Scripts\Activate.ps1
-alembic upgrade head
 ```
 
 ### Frontend Setup
@@ -145,9 +195,8 @@ npm install
 
 3. **Configure environment variables**
 ```powershell
-# Copy the example env file
 Copy-Item .env.example .env
-# Edit .env if needed (default: VITE_API_BASE_URL=http://localhost:8000)
+# Default: VITE_API_BASE_URL=http://localhost:8000
 ```
 
 4. **Run development server**
@@ -167,18 +216,204 @@ npm run build
 npm run type-check
 ```
 
+---
+
+## Production Deployment Guide
+
+### Platform Recommendation: Render
+
+| Platform | Free/Cheap Tier Status (Verified 2024–2026) | PostgreSQL Support | Verdict |
+|----------|---------------------------------------------|--------------------|---------|
+| **Render (Recommended)** | **750 free instance hours/month**, 100% free Static Sites with CDN & rewrite rules, free PostgreSQL instance (1GB, 256MB RAM, 30 days active). **No credit card required.** | Managed PostgreSQL with internal/external URLs, connection pooling. | **Best choice for intern evaluation & demo deployments.** Simplest single-dashboard setup with zero upfront cost. |
+| **Railway** | Initial 30-day trial ($5 credit). Free tier limited to $1/month credit, which quickly runs out when hosting a persistent 24/7 Postgres database. | Plugin PostgreSQL service. | Requires ongoing billing or credit card to avoid abrupt container shutdowns. |
+| **Fly.io** | Eliminated permanent free tier for new accounts (7-day trial). Requires credit card upfront upon signup. | Managed Postgres clusters start at $38/mo; tiny self-hosted instances require card. | High setup friction; not suitable for quick, credit-card-free intern evaluation. |
+
+---
+
+### Step 1: Provision Managed PostgreSQL on Render
+
+1. Log in to [Render Dashboard](https://dashboard.render.com/) (sign up with GitHub).
+2. Click **New +** > **PostgreSQL**.
+3. Configure the database:
+   - **Name**: `snackoverflow-db`
+   - **Database**: `snackoverflow`
+   - **User**: `snackoverflow`
+   - **Region**: Choose the region closest to you (e.g., *Singapore*, *Frankfurt*, *Oregon*).
+   - **Instance Type**: Select **Free** (1 GB storage, 256 MB RAM, 100 connections).
+4. Click **Create Database**.
+5. Once provisioned, locate the **Connections** panel:
+   - Copy the **Internal Database URL** (e.g., `postgres://snackoverflow:password@dpg-...:5432/snackoverflow`).
+   - *(Note: Use the Internal URL for services running inside Render for lowest latency and free internal bandwidth).*
+
+> [!TIP]
+> **Scheme Normalization**: Cloud providers supply `postgres://` or `postgresql://` URIs. SQLAlchemy 2.0 with the `psycopg 3` driver strictly requires the `postgresql+psycopg://` scheme. Both `backend/app/core/config.py` and `backend/alembic/env.py` automatically detect and normalize this on the fly.
+
+---
+
+### Step 2: Deploy Backend Web Service (Docker)
+
+1. In Render Dashboard, click **New +** > **Web Service**.
+2. Connect your GitHub repository (`bipolar_task`).
+3. Configure the service:
+   - **Name**: `snackoverflow-api`
+   - **Region**: Same region as your database.
+   - **Language / Runtime**: **Docker**
+   - **Dockerfile Path**: `./backend/Dockerfile`
+   - **Docker Context**: `./backend`
+   - **Instance Type**: **Free** (512 MB RAM, 0.1 vCPU).
+4. Expand **Advanced Settings**:
+   - **Health Check Path**: `/health` (Render continuously monitors this path; startup succeeds once it returns HTTP 200 `{"status":"ok"}`).
+5. Add the **Environment Variables**:
+
+| Variable | Recommended Production Value | Purpose |
+|----------|------------------------------|---------|
+| `DATABASE_URL` | *(Paste Internal Database URL from Step 1)* | Database connection (auto-normalized to `postgresql+psycopg://`) |
+| `JWT_SECRET` | *(64-character random hex string)* | Secure JWT token signing. Generate with: `python -c "import secrets; print(secrets.token_hex(32))"` |
+| `JWT_ALGORITHM` | `HS256` | Cryptographic algorithm for JWTs |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | `60` | Token validity lifespan |
+| `CORS_ORIGINS` | `https://snackoverflow.onrender.com` | **Exact frontend URL** without trailing slash. Requests from unauthorized origins will be blocked. |
+| `ENV` | `production` | Disables debug query logs in console |
+| `ENABLE_DOCS` | `true` | Leaves `/docs` interactive Swagger UI accessible for reviewer testing |
+| `SEED_ON_START` | `false` | Keep `false` after initial database seeding |
+
+6. Click **Create Web Service**.
+   - Render pulls the code, builds the `backend/Dockerfile`, runs pending Alembic migrations (`alembic upgrade head`), and launches Uvicorn dynamically bound to the platform's `$PORT`.
+
+---
+
+### Step 3: Seed Database & Rotate Passwords
+
+#### Option A: One-Time Auto-Seed on Startup
+1. In the Web Service settings, temporarily set environment variable:
+   `SEED_ON_START=true`
+2. Trigger **Manual Deploy** > **Deploy latest commit**.
+3. During container startup, `scripts/seed.py` creates demo users (`admin@snackoverflow.com`, `member@snackoverflow.com`), initial snack inventory across all 4 categories, and sample votes.
+4. Immediately change `SEED_ON_START=false` once startup completes to avoid re-running checks on future deploys.
+
+#### Option B: Run Seed via Render Web Shell
+1. Go to your `snackoverflow-api` service in Render.
+2. Click the **Shell** tab in the sidebar (opens an in-browser bash terminal inside your container).
+3. Execute:
+   ```bash
+   python scripts/seed.py
+   ```
+
+#### Rotating Passwords in Production
+To specify custom secure passwords instead of default demo credentials, provide environment variables before seeding:
+```env
+SEED_ADMIN_PASSWORD=YourSuperSecureAdminPassword2026!
+SEED_MEMBER_PASSWORD=YourSuperSecureMemberPassword2026!
+```
+Or reset a password directly at any time via the Render Shell using Python:
+```python
+python -c "
+from app.core.db import SessionLocal
+from app.models import User
+from app.core.security import hash_password
+
+db = SessionLocal()
+admin = db.query(User).filter(User.email == 'admin@snackoverflow.com').first()
+if admin:
+    admin.password_hash = hash_password('NewRotatedPasswordHere123!')
+    db.commit()
+    print('Password rotated successfully')
+db.close()
+"
+```
+
+---
+
+### Step 4: Deploy Frontend as a Static Site
+
+Render Static Sites are **100% free forever**, hosted on a global fast CDN with zero sleep/spin-down delays and automated SSL.
+
+1. In Render Dashboard, click **New +** > **Static Site**.
+2. Connect your GitHub repository (`bipolar_task`).
+3. Configure the static site:
+   - **Name**: `snackoverflow`
+   - **Branch**: `main`
+   - **Root Directory**: `frontend/vue-project`
+   - **Build Command**: `npm run build-only`
+   - **Publish Directory**: `dist`
+4. Add Environment Variable:
+   - **Key**: `VITE_API_BASE_URL`
+   - **Value**: `https://snackoverflow-api.onrender.com` *(Your deployed backend URL from Step 2, no trailing slash)*
+   - *(Note: Vite bakes this URL into the client bundle at build time).*
+5. **Configure SPA Rewrite Rule** *(Critical for deep links & browser refresh)*:
+   - Go to the **Redirects / Rewrites** tab in your static site dashboard.
+   - Click **Add Rule**:
+     - **Type**: `Rewrite`
+     - **Source**: `/*`
+     - **Destination**: `/index.html`
+   - Click **Save Changes**.
+   *(This ensures paths like `/snacks`, `/login`, or `/snacks?category=sweet` serve `index.html` so Vue Router handles them client-side rather than returning an Nginx 404).*
+6. Click **Create Static Site**.
+
+---
+
+### Step 5: Production Hardening & Operational Behavior
+
+#### 1. API Documentation Policy (`/docs`)
+- **Reviewer Evaluation Policy**: For this intern assignment, `ENABLE_DOCS=true` is enabled by default so reviewers can test endpoints, payloads, and error responses live via Swagger UI.
+- **Enterprise Hardening**: In restricted corporate deployments, set `ENABLE_DOCS=false` in the backend environment variables to disable `/docs`, `/redoc`, and `/openapi.json`.
+
+#### 2. HTTPS & SSL Enforcement
+- Render automatically provisions Let's Encrypt certificates and enforces HTTPS redirection on both Web Services and Static Sites.
+- The frontend `VITE_API_BASE_URL` must use `https://` to prevent browser mixed-content blocking.
+
+#### 3. Free-Tier Cold-Start Handling
+- **Sleep Behavior**: On Render's free tier, backend instances spin down after 15 minutes of inactivity. When a new visitor accesses the app, the first backend request will take **30–50 seconds** to wake up the container.
+- **Frontend Graceful Handling**:
+  - The Vue frontend does not crash or display a blank white screen.
+  - The snack grid displays shimmering skeleton loaders during the wait.
+  - If a connection times out before the backend finishes booting, the global error handling renders a styled `<ErrorState>` component with an informative message (*"We can't reach the pantry server. Check your connection and try again."*) and a **Try Again** button.
+
+---
+
+### Post-Deployment Smoke-Test Checklist
+
+Verify your production deployment manually by completing this step-by-step checklist:
+
+- [ ] **1. Health Check**: Visit `https://<your-backend>.onrender.com/health` in browser or curl.
+  - *Expected*: HTTP 200 with JSON `{"status":"ok"}`.
+- [ ] **2. Swagger Docs**: Visit `https://<your-backend>.onrender.com/docs`.
+  - *Expected*: Interactive Swagger UI displays all authentication, snack, and voting endpoints.
+- [ ] **3. Frontend Landing**: Visit `https://<your-frontend>.onrender.com`.
+  - *Expected*: Clean render of the Snack Overflow login view with custom typography and warm palette.
+- [ ] **4. Member Login**: Log in with `member@snackoverflow.com` / `member123`.
+  - *Expected*: Redirects to `/snacks` or `/`. Admin toolbar (Add Snack FAB, Edit, Restock, Delete) is **not** in DOM.
+- [ ] **5. Consume Snack**: Click the quantity stepper and click **Consume**.
+  - *Expected*: Loading spinner appears, checkmark confirmation morphs, and quantity decreases in real time.
+- [ ] **6. Voting & Tie-Breaker**: Click the heart button on a snack card.
+  - *Expected*: Heart animates to active state, vote count increments by 1.
+- [ ] **7. Admin Login & Role Check**: Log out, then log in with `admin@snackoverflow.com` / `admin123`.
+  - *Expected*: "+ Add Snack" Floating Action Button and card admin controls (Edit, Restock, Delete) become visible.
+- [ ] **8. Restock Item**: Open Restock modal on a snack, click `+10`, and submit.
+  - *Expected*: Snack quantity updates immediately with green glow highlight animation.
+- [ ] **9. SPA Deep Link & Refresh**: Navigate to `https://<your-frontend>.onrender.com/snacks?category=sweet&status=stocked` and press **F5** (hard refresh).
+  - *Expected*: Page reloads directly on the filtered view without 404 errors (verifying rewrite rule).
+- [ ] **10. 404 Route Handling**: Navigate to `https://<your-frontend>.onrender.com/invalid-path`.
+  - *Expected*: Styled 404 NotFound view with "Back to Pantry" button; no blank screen.
+- [ ] **11. Browser Console Check**: Open Developer Tools (F12) > Console.
+  - *Expected*: Zero CORS errors, zero unhandled promise rejections, zero mixed-content warnings.
+
+---
+
 ## Environment Variables
 
 ### Backend
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `DATABASE_URL` | PostgreSQL connection string | `postgresql+psycopg://snackoverflow:snackoverflow@localhost:5432/snackoverflow` |
+| `DATABASE_URL` | PostgreSQL connection string (auto-normalized to `postgresql+psycopg://`) | `postgresql+psycopg://snackoverflow:snackoverflow@localhost:5432/snackoverflow` |
 | `JWT_SECRET` | JWT signing key (min 32 chars) | *Required* |
 | `JWT_ALGORITHM` | JWT algorithm | `HS256` |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | Token expiration time | `60` |
-| `CORS_ORIGINS` | Comma-separated allowed origins | `http://localhost:5173` |
-| `ENV` | Environment mode | `development` |
+| `CORS_ORIGINS` | Comma-separated allowed origins (no trailing slash) | `http://localhost:5173` |
+| `ENV` | Environment mode (`development` / `production`) | `development` |
+| `ENABLE_DOCS` | Toggle `/docs` and `/redoc` Swagger OpenAPI docs | `true` |
+| `SEED_ON_START` | Automatically run `seed.py` on container startup | `false` |
+| `PORT` | Web server listening port (injected by cloud platforms) | `8000` |
 | `POSTGRES_USER` | PostgreSQL user | `snackoverflow` |
 | `POSTGRES_PASSWORD` | PostgreSQL password | `snackoverflow` |
 | `POSTGRES_DB` | PostgreSQL database name | `snackoverflow` |
@@ -187,7 +422,7 @@ npm run type-check
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `VITE_API_BASE_URL` | Backend API base URL | `http://localhost:8000` |
+| `VITE_API_BASE_URL` | Backend API base URL (baked in at build time) | `http://localhost:8000` |
 
 ## Demo Accounts
 
@@ -195,8 +430,8 @@ The application includes demo accounts for testing:
 
 | Role | Email | Password |
 |------|-------|----------|
-| Admin | admin@snackoverflow.test | Any password |
-| Member | member@snackoverflow.test | Any password |
+| Admin | admin@snackoverflow.com | admin123 |
+| Member | member@snackoverflow.com | member123 |
 
 **Note**: For demo purposes, any password works. In production, proper password validation would be enforced.
 
