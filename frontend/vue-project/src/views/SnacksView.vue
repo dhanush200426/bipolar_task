@@ -1451,6 +1451,126 @@ onBeforeUnmount(() => {
   border-width: 0;
 }
 
+/* Mobile Enhancements (< 768px) */
+@media (max-width: 767px) {
+  .snacks-view__header {
+    padding: 1.75rem 1rem 1.25rem;
+  }
+
+  .snacks-view__title {
+    font-size: 1.75rem;
+  }
+
+  .snacks-view__subtitle {
+    font-size: 0.875rem;
+    line-height: 1.45;
+  }
+
+  .snacks-view__sticky-bar {
+    top: 52px;
+  }
+
+  .snacks-view__sticky-container {
+    padding: 0.5rem 1rem;
+    gap: 0.5rem;
+  }
+
+  .snacks-view__tab-btn {
+    height: 36px;
+    padding: 0 1rem;
+    font-size: 0.8125rem;
+    gap: 6px;
+  }
+
+  .snacks-view__controls-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "search count"
+      "status sort";
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .snacks-view__search-wrap {
+    grid-area: search;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .snacks-view__search-input {
+    height: 38px;
+    font-size: 0.8125rem;
+  }
+
+  .snacks-view__count-badge {
+    grid-area: count;
+    height: 38px;
+    padding: 0 0.75rem;
+    align-self: center;
+  }
+
+  .snacks-view__dropdown-wrap:nth-of-type(1) {
+    grid-area: status;
+    width: 100%;
+  }
+
+  .snacks-view__dropdown-wrap:nth-of-type(2) {
+    grid-area: sort;
+    width: 100%;
+  }
+
+  .snacks-dropdown-btn {
+    width: 100%;
+    justify-content: space-between;
+    height: 38px;
+    font-size: 0.8125rem;
+    padding: 0 0.75rem;
+  }
+
+  .snacks-view__dropdown-wrap:nth-of-type(1) .snacks-dropdown-menu {
+    left: 0;
+    right: auto;
+    min-width: 180px;
+    max-width: calc(100vw - 2rem);
+  }
+
+  .snacks-view__dropdown-wrap:nth-of-type(2) .snacks-dropdown-menu {
+    right: 0;
+    left: auto;
+    min-width: 190px;
+    max-width: calc(100vw - 2rem);
+  }
+
+  .snacks-view__main {
+    padding-top: 1rem;
+  }
+
+  .snacks-view__container {
+    padding: 0 1rem;
+  }
+
+  .snacks-grid {
+    gap: 1.15rem;
+  }
+
+  .snacks-view__all-loaded {
+    margin-top: 2rem;
+    margin-bottom: 1.5rem;
+    gap: 0.75rem;
+  }
+
+  .all-loaded-text {
+    font-size: 0.75rem;
+  }
+
+  .snacks-view__fab {
+    height: 46px;
+    padding: 0 1.15rem;
+    font-size: 0.8125rem;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .skeleton-shimmer {
     animation: none;

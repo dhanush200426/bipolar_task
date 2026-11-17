@@ -1007,6 +1007,76 @@ async function handleVoteToggle() {
   height: 14px;
 }
 
+/* Mobile Enhancements (< 640px) */
+@media (max-width: 639px) {
+  .snack-card {
+    padding: 1rem;
+    border-radius: var(--radius-lg);
+  }
+
+  .snack-card__media {
+    height: 115px;
+    margin-bottom: var(--space-3);
+  }
+
+  .snack-card__illustration-wrap {
+    width: 75px;
+    height: 75px;
+  }
+
+  .snack-card__title {
+    font-size: 1.05rem;
+  }
+
+  .snack-card__meta-row {
+    padding-bottom: var(--space-3);
+  }
+
+  .snack-card__quantity-num {
+    font-size: 1.15rem;
+  }
+
+  .snack-card__actions {
+    gap: 0.5rem;
+    margin-top: var(--space-3);
+  }
+
+  .snack-card__stepper {
+    height: 38px;
+  }
+
+  .snack-card__stepper-btn {
+    width: 28px;
+    height: 34px;
+  }
+
+  .snack-card__stepper-value {
+    min-width: 24px;
+    font-size: 0.8125rem;
+  }
+
+  .snack-card__consume-btn {
+    height: 38px;
+    font-size: 0.8125rem;
+    padding: 0 var(--space-3);
+  }
+
+  .snack-card__admin-bar {
+    margin-top: var(--space-2);
+    padding-top: var(--space-2);
+  }
+
+  .admin-btn {
+    height: 32px;
+    font-size: 0.75rem;
+  }
+
+  .admin-btn--icon {
+    width: 32px;
+    flex: 0 0 32px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .snack-card:hover {
     transform: none;

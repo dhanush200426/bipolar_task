@@ -111,13 +111,31 @@
     <!-- Mobile navigation -->
     <Transition name="mobile-nav">
       <nav v-if="isMobileMenuOpen" class="app-shell__nav app-shell__nav--mobile">
+        <!-- User info banner on mobile drawer -->
+        <div v-if="user" class="app-shell__mobile-user-card">
+          <div class="app-shell__mobile-avatar">
+            {{ user?.name ? user.name.charAt(0).toUpperCase() : 'U' }}
+          </div>
+          <div class="app-shell__mobile-user-meta">
+            <span class="app-shell__mobile-user-name">{{ user?.name }}</span>
+            <span class="app-shell__mobile-user-email">{{ user?.email }}</span>
+          </div>
+          <span class="badge" :class="roleBadgeClass">
+            {{ user.role }}
+          </span>
+        </div>
+
         <router-link 
           to="/" 
           class="app-shell__mobile-link" 
           active-class="app-shell__mobile-link--active"
           @click="isMobileMenuOpen = false"
         >
-          Dashboard
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mobile-nav-icon">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+          <span>Dashboard</span>
         </router-link>
         <router-link 
           to="/snacks" 
@@ -125,18 +143,31 @@
           active-class="app-shell__mobile-link--active"
           @click="isMobileMenuOpen = false"
         >
-          Snack Vault
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mobile-nav-icon">
+            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+            <line x1="3" y1="6" x2="21" y2="6"/>
+            <path d="M16 10a4 4 0 0 1-8 0"/>
+          </svg>
+          <span>Snack Vault</span>
         </router-link>
         <template v-if="user">
           <div class="app-shell__mobile-divider"></div>
           <button @click="handleLogout" class="app-shell__mobile-link app-shell__mobile-link--logout">
-            Logout
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mobile-nav-icon">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16 17 21 12 16 7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+            <span>Logout</span>
           </button>
         </template>
         <template v-else>
           <div class="app-shell__mobile-divider"></div>
           <router-link to="/login" class="app-shell__mobile-link" @click="isMobileMenuOpen = false">
-            Sign In
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mobile-nav-icon">
+              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/>
+            </svg>
+            <span>Sign In</span>
           </router-link>
         </template>
       </nav>
@@ -643,25 +674,99 @@ onUnmounted(() => {
   padding: var(--space-4);
   background-color: #350661;
   border-bottom: 2px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+}
+
+.app-shell__mobile-user-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background-color: rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-3);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.app-shell__mobile-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-full);
+  background-color: #FFFFFF;
+  color: #490982;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.app-shell__mobile-user-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.app-shell__mobile-user-name {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: #FFFFFF;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-shell__mobile-user-email {
+  font-size: 0.75rem;
+  color: #D4B6F7;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .app-shell__mobile-link {
-  padding: var(--space-3) var(--space-4);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
   font-size: var(--text-base);
-  font-weight: 500;
+  font-weight: 600;
   color: #FFFFFF;
   text-decoration: none;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   margin-bottom: var(--space-2);
+  min-height: 44px;
+  transition: all var(--transition-fast);
+}
+
+.mobile-nav-icon {
+  width: 18px;
+  height: 18px;
+  opacity: 0.85;
 }
 
 .app-shell__mobile-link:hover,
 .app-shell__mobile-link--active {
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: #490982;
+  color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .app-shell__mobile-link--logout {
   color: #FCA5A5;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  width: 100%;
+}
+
+.app-shell__mobile-link--logout:hover {
+  background-color: rgba(239, 68, 68, 0.2);
+  color: #FECACA;
 }
 
 .app-shell__mobile-divider {
@@ -1001,6 +1106,93 @@ a.contact-text:hover {
   .fade-slide-enter-active,
   .fade-slide-leave-active {
     transition: none;
+  }
+}
+
+/* Mobile (< 768px) enhancements */
+@media (max-width: 767px) {
+  .app-shell__container {
+    padding: 0.65rem 1rem;
+    gap: 0.5rem;
+  }
+
+  .app-shell__logo {
+    gap: 0.5rem;
+  }
+
+  .app-shell__logo-icon-wrap {
+    width: 32px;
+    height: 32px;
+  }
+
+  .app-shell__logo-text {
+    font-size: 1.15rem;
+  }
+
+  .app-shell__logo-subtext {
+    font-size: 0.6rem;
+  }
+
+  .app-shell__user-meta,
+  .app-shell__user-chevron {
+    display: none;
+  }
+
+  .app-shell__user-button {
+    padding: 2px;
+    background: transparent;
+    border: 1.5px solid rgba(255, 255, 255, 0.4);
+  }
+
+  .app-shell__user-avatar {
+    width: 32px;
+    height: 32px;
+    font-size: 0.8125rem;
+  }
+
+  .app-shell__mobile-toggle {
+    width: 36px;
+    height: 36px;
+  }
+
+  .app-shell__signin-btn {
+    padding: 0.35rem 0.85rem;
+    font-size: 0.8125rem;
+  }
+
+  .app-shell__footer-container {
+    padding: 2.5rem 1rem 1.5rem;
+  }
+
+  .app-shell__footer-grid {
+    gap: 1.75rem;
+    margin-bottom: 2rem;
+  }
+
+  .app-shell__footer-brand {
+    max-width: 100%;
+  }
+
+  .app-shell__footer-title {
+    font-size: 1.25rem;
+  }
+
+  .app-shell__footer-tagline {
+    font-size: 0.8125rem;
+    margin-bottom: 1rem;
+  }
+
+  .app-shell__footer-heading {
+    font-size: 1.05rem;
+    margin-bottom: 0.85rem;
+  }
+
+  .bottom-links {
+    gap: 0.5rem;
+  }
+
+  .bottom-link {
+    font-size: 0.75rem;
   }
 }
 

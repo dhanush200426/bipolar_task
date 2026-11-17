@@ -893,4 +893,115 @@ async function handleSubmit() {
   height: 14px;
   color: #490982;
 }
+
+/* Mobile Enhancements (< 768px) */
+@media (max-width: 767px) {
+  .login-view__hero {
+    padding: 2rem 1rem 1.5rem;
+  }
+
+  .login-view__hero-badge {
+    margin-bottom: var(--space-2);
+    font-size: 0.7rem;
+    padding: 0.25rem 0.65rem;
+  }
+
+  .login-view__hero-title {
+    font-size: 1.75rem;
+    line-height: 1.2;
+    margin-bottom: 0.5rem;
+  }
+
+  .login-view__hero-subtitle {
+    font-size: 0.875rem;
+    line-height: 1.45;
+  }
+
+  .login-view__container {
+    padding: 1.25rem 1rem;
+  }
+
+  .login-view__layout {
+    gap: 1.25rem;
+  }
+
+  .info-card {
+    padding: 1.25rem;
+    border-radius: var(--radius-xl);
+  }
+
+  .info-card__title {
+    font-size: 1.35rem;
+  }
+
+  .info-card__desc {
+    font-size: 0.8125rem;
+    margin-bottom: 1rem;
+  }
+
+  .feature-pills {
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .feature-pill {
+    padding: 0.75rem;
+    gap: 0.65rem;
+    border-radius: var(--radius-md);
+  }
+
+  .feature-pill__icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .feature-pill__icon svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .feature-pill__content h4 {
+    font-size: 0.8125rem;
+  }
+
+  .feature-pill__content p {
+    font-size: 0.75rem;
+  }
+
+  .quick-demo-section {
+    padding-top: 1rem;
+  }
+
+  .quick-demo-card {
+    padding: 0.75rem;
+    border-radius: var(--radius-md);
+  }
+
+  .login-card {
+    padding: 1.5rem 1.15rem;
+    border-radius: var(--radius-xl);
+  }
+
+  .login-card__header {
+    margin-bottom: var(--space-4);
+  }
+
+  .login-card__title {
+    font-size: 1.45rem;
+  }
+
+  .login-card__subtitle {
+    font-size: 0.8125rem;
+  }
+
+  .login-card__input {
+    height: 44px;
+    font-size: 0.9375rem;
+  }
+
+  .login-card__submit-btn {
+    height: 46px;
+    font-size: 0.9375rem;
+  }
+}
 </style>
