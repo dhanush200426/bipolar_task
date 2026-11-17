@@ -1,0 +1,14 @@
+{
+  "name": "snack-overflow-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "vue-project"
+  ],
+  "scripts": {
+    "dev": "npm --prefix vue-project run dev",
+    "build": "npm --prefix vue-project run build",
+    "build-only": "npm --prefix vue-project run build-only",
+    "type-check": "npm --prefix vue-project run type-check"
+  }
+}
