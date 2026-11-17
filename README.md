@@ -26,6 +26,38 @@ A production-minded office pantry tracker built for high concurrency, rock-solid
 
 ---
 
+## 📐 Short Design Note
+
+### Key Decisions
+1. **Atomic Consumption via Row-Level Locks**: Rather than doing a prone-to-race `SELECT ... if quantity >= amount ... UPDATE`, the API executes a single atomic statement:
+   ```sql
+   UPDATE snacks 
+   SET quantity = quantity - :amount, updated_at = NOW()
+   WHERE id = :id AND quantity >= :amount 
+   RETURNING id, name, category, quantity;
+   ```
+   PostgreSQL's default `READ COMMITTED` isolation serializes concurrent updates with exclusive row locks, guaranteeing inventory never dips below zero even if 50 users click "Consume" on the last packet simultaneously.
+2. **Derived Snack Status (No Stored Status Column)**: Status (`stocked`, `running_low`, `gone`) is computed dynamically on read via a SQL `CASE` expression. This eliminates data synchronization anomalies where quantity changes but a status column remains stale.
+3. **Database-Enforced Unique Constraints**: Duplicate voting prevention is delegated to PostgreSQL's composite unique index `UNIQUE (user_id, snack_id)`. Concurrent insertions trigger an `IntegrityError` (mapped cleanly to HTTP 409 `ALREADY_VOTED`), eliminating check-then-insert race conditions.
+4. **Historical Snapshot in Activity Log**: `activities` stores a `snack_name` snapshot with `ON DELETE SET NULL`. If a snack is removed by an admin, the audit trail of past consumption and restocking remains intact.
+
+### Trade-offs
+- **PostgreSQL vs Redis for Real-Time Stock**: We chose pure PostgreSQL with row-level locks over an external Redis counter to preserve strict ACID transactions and avoid multi-database consistency overhead for a single-pantry scale.
+- **Stateless JWTs in LocalStorage vs HttpOnly Cookie Sessions**: Storing JWTs in client storage simplifies cross-origin SPA communication and horizontal scaling without stateful session lookups, but sacrifices instantaneous server-side token revocation before expiry.
+- **Sync SQLAlchemy 2.0 vs Async (asyncio)**: Sync engine with `psycopg 3` was chosen for predictable connection pooling, straightforward transaction rollbacks, and avoiding async ORM footguns, trading off extreme concurrent I/O throughput.
+
+### What Would Break First at 100× the Users (10,000+ Active Users)?
+1. **Single-Row Hotspot Contention**: When a popular snack is restocked, hundreds of concurrent requests contend for the same row lock (`UPDATE snacks WHERE id = :id`), exhausting DB connection pools.
+   - *Mitigation*: Move real-time decrementing to an in-memory Redis cluster (`DECRBY`) and asynchronously flush durable inventory state to PostgreSQL.
+2. **Database Connection Limits**: PostgreSQL spawns a dedicated process per connection; hundreds of web workers will quickly exhaust `max_connections`.
+   - *Mitigation*: Introduce **PgBouncer** in transaction pooling mode between FastAPI workers and Postgres.
+3. **Audit Log Table Bloat**: The `activities` table will accumulate millions of records, degrading history lookups and joins.
+   - *Mitigation*: Implement declarative table partitioning by range on `created_at` (monthly partitions) and offload read-heavy analytics to replicas.
+4. **Token Invalidation Gaps**: Stateless JWTs cannot be revoked immediately upon employee offboarding or role downgrade.
+   - *Mitigation*: Introduce a Redis-backed token revocation list or switch to short-lived 5-minute access tokens paired with rotating HttpOnly refresh tokens.
+
+---
+
 ## ✨ Features
 
 ### 📊 Dashboard (`/`)
