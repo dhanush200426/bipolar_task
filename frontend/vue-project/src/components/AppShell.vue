@@ -13,7 +13,7 @@
           </div>
           <div class="app-shell__logo-text-group">
             <span class="app-shell__logo-text">Snack Overflow</span>
-            <span class="app-shell__logo-subtext">by toven.in</span>
+            <span class="app-shell__logo-subtext">Pantry OS</span>
           </div>
         </router-link>
 
@@ -36,8 +36,8 @@
           </router-link>
         </nav>
 
-        <!-- User menu -->
-        <div class="app-shell__user" ref="userMenuRef">
+        <!-- User menu / Sign in -->
+        <div v-if="user" class="app-shell__user" ref="userMenuRef">
           <button 
             @click="toggleUserMenu" 
             class="app-shell__user-button"
@@ -76,6 +76,16 @@
               </button>
             </div>
           </Transition>
+        </div>
+
+        <!-- Sign In Button for unauthenticated state -->
+        <div v-else class="app-shell__auth-actions">
+          <router-link to="/login" class="app-shell__signin-btn" active-class="app-shell__signin-btn--active">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="nav-icon">
+              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/>
+            </svg>
+            Sign In
+          </router-link>
         </div>
 
         <!-- Mobile menu button -->
@@ -117,10 +127,18 @@
         >
           Snack Vault
         </router-link>
-        <div class="app-shell__mobile-divider"></div>
-        <button @click="handleLogout" class="app-shell__mobile-link app-shell__mobile-link--logout">
-          Logout
-        </button>
+        <template v-if="user">
+          <div class="app-shell__mobile-divider"></div>
+          <button @click="handleLogout" class="app-shell__mobile-link app-shell__mobile-link--logout">
+            Logout
+          </button>
+        </template>
+        <template v-else>
+          <div class="app-shell__mobile-divider"></div>
+          <router-link to="/login" class="app-shell__mobile-link" @click="isMobileMenuOpen = false">
+            Sign In
+          </router-link>
+        </template>
       </nav>
     </Transition>
 
@@ -150,7 +168,7 @@
               <span class="app-shell__footer-title">Snack Overflow</span>
             </div>
             <p class="app-shell__footer-tagline">
-              The modern office pantry tracker built for high-performance workplaces. Inspired by the clean aesthetics of <strong>toven.in</strong>.
+              The modern office pantry tracker built for high-performance workplaces. Real-time inventory tracking, zero hunger.
             </p>
             <div class="app-shell__footer-status">
               <span class="status-pulse"></span>
@@ -192,9 +210,9 @@
                 <circle cx="12" cy="10" r="3"/>
               </svg>
               <address class="contact-text">
-                Toven Innovation Hub, Floor 4<br>
-                120 Silicon Park Boulevard, Suite 500<br>
-                Tech Corridor, Bangalore 560100
+                Vertex Tech Park, Tower B, Level 6<br>
+                742 Cyber City Boulevard, Suite 610<br>
+                Whitefield, Bengaluru, KA 560066
               </address>
             </div>
             <div class="app-shell__footer-contact-item">
@@ -202,7 +220,7 @@
                 <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
                 <polyline points="22,6 12,13 2,6"/>
               </svg>
-              <a href="mailto:pantry@toven.in" class="contact-text">pantry@toven.in</a>
+              <a href="mailto:pantry@snackoverflow.com" class="contact-text">pantry@snackoverflow.com</a>
             </div>
             <div class="app-shell__footer-contact-item">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="contact-icon">
@@ -246,7 +264,7 @@
               </a>
             </div>
             <div class="app-shell__footer-badge-box">
-              <span class="toven-tag">Theme: #490982 Purple Edition</span>
+              <span class="palette-tag">#490982 Purple Edition</span>
             </div>
           </div>
         </div>
@@ -254,7 +272,7 @@
         <!-- Footer Bottom Bar -->
         <div class="app-shell__footer-bottom">
           <p class="copyright-text">
-            &copy; 2026 <strong>Snack Overflow</strong> &bull; Crafted with precision &bull; Inspired by <strong>toven.in</strong>
+            &copy; 2026 <strong>Snack Overflow</strong> &bull; Crafted with precision for high-velocity teams.
           </p>
           <div class="bottom-links">
             <span class="bottom-link">Privacy Policy</span>
@@ -856,7 +874,7 @@ a.contact-text:hover {
   margin-top: 0.5rem;
 }
 
-.toven-tag {
+.palette-tag {
   display: inline-block;
   font-size: 0.75rem;
   font-weight: 600;
@@ -865,6 +883,38 @@ a.contact-text:hover {
   color: #E9D5FF;
   border-radius: var(--radius-full);
   border: 1px solid rgba(168, 85, 247, 0.4);
+}
+
+.app-shell__auth-actions {
+  display: flex;
+  align-items: center;
+}
+
+.app-shell__signin-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: #490982;
+  background-color: #FFFFFF;
+  text-decoration: none;
+  padding: 0.5rem 1.15rem;
+  border-radius: var(--radius-full);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+  transition: all var(--transition-fast);
+}
+
+.app-shell__signin-btn:hover {
+  background-color: #FAF5FE;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+}
+
+.app-shell__signin-btn--active {
+  background-color: #F1E8F8;
+  color: #490982;
+  border: 1.5px solid rgba(255, 255, 255, 0.6);
 }
 
 /* Footer Bottom */

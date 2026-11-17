@@ -50,7 +50,7 @@ A production-minded office pantry tracker for managing snacks and inventory.
 - Protected routes with redirect preservation
 
 ### Design & UX
-- **Toven-Inspired Purple & White Palette**: Primary royal purple (`#490982`), deep hover purple (`#350661`), accent violet (`#6816B3`), and crisp pure white background (`#FFFFFF`) with lavender surfaces (`#F1E8F8`).
+- **Royal Purple & White Palette**: Primary royal purple (`#490982`), deep hover purple (`#350661`), accent violet (`#6816B3`), and crisp pure white background (`#FFFFFF`) with lavender surfaces (`#F1E8F8`).
 - **Full-Scale Edge-to-Edge Header & Footer**: Widescreen-optimized navigation bar and rich 4-column footer featuring office location, 24/7 hours, social media links (LinkedIn, GitHub, X, Instagram), and live pantry inventory status.
 - **Unified Single-Page Catalog**: Frictionless browsing where all pantry snacks load continuously on a single page with a live count badge, eliminating segmented 1, 2, 3 page navigation.
 - **Typography & Motion**: Self-hosted fonts (Baloo 2 for headings, Inter for body) and GSAP micro-animations with full `prefers-reduced-motion` accessibility support.

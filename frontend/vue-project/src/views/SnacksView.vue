@@ -87,42 +87,107 @@
             </button>
           </div>
 
-          <!-- Status Filter Dropdown -->
-          <div class="snacks-view__filter-dropdown-wrap">
-            <label for="status-filter" class="sr-only">Filter by stock status</label>
-            <select
-              id="status-filter"
-              v-model="currentStatus"
-              class="snacks-view__select"
+          <!-- Status Filter Dropdown with Theme & Animations -->
+          <div class="snacks-view__dropdown-wrap" ref="statusDropdownRef">
+            <button
+              type="button"
+              class="snacks-dropdown-btn"
+              :class="{
+                'snacks-dropdown-btn--open': isStatusDropdownOpen,
+                'snacks-dropdown-btn--filtered': currentStatus !== ''
+              }"
+              aria-haspopup="listbox"
+              :aria-expanded="isStatusDropdownOpen"
               aria-label="Filter by stock status"
-              @change="onFilterChange"
+              @click="toggleStatusDropdown"
             >
-              <option value="">Status: All</option>
-              <option value="stocked">Stocked</option>
-              <option value="running_low">Running low</option>
-              <option value="gone">Gone</option>
-            </select>
+              <span class="status-indicator-dot" :class="`dot--${currentStatus || 'all'}`" aria-hidden="true"></span>
+              <span class="dropdown-btn-label">{{ currentStatusLabel }}</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="dropdown-chevron" :class="{ 'dropdown-chevron--flipped': isStatusDropdownOpen }">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+
+            <!-- Dropdown Menu Animation -->
+            <Transition name="filter-dropdown">
+              <div
+                v-if="isStatusDropdownOpen"
+                class="snacks-dropdown-menu"
+                role="listbox"
+                aria-label="Stock status options"
+              >
+                <div class="dropdown-menu-header">Filter by Status</div>
+                <button
+                  v-for="opt in statusOptions"
+                  :key="opt.value"
+                  type="button"
+                  role="option"
+                  :aria-selected="currentStatus === opt.value"
+                  class="dropdown-menu-item"
+                  :class="{ 'dropdown-menu-item--selected': currentStatus === opt.value }"
+                  @click="selectStatus(opt.value)"
+                >
+                  <span class="status-indicator-dot" :class="opt.dotClass" aria-hidden="true"></span>
+                  <span class="item-label">{{ opt.label }}</span>
+                  <svg v-if="currentStatus === opt.value" class="item-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </button>
+              </div>
+            </Transition>
           </div>
 
-          <!-- Sort Dropdown -->
-          <div class="snacks-view__sort-dropdown-wrap">
-            <label for="sort-select" class="sr-only">Sort snacks</label>
-            <select
-              id="sort-select"
-              v-model="currentSortCombined"
-              class="snacks-view__select"
-              aria-label="Sort snacks by field and direction"
-              @change="onSortChange"
+          <!-- Arranging Order / Sort Dropdown with Theme & Animations -->
+          <div class="snacks-view__dropdown-wrap" ref="sortDropdownRef">
+            <button
+              type="button"
+              class="snacks-dropdown-btn"
+              :class="{
+                'snacks-dropdown-btn--open': isSortDropdownOpen,
+                'snacks-dropdown-btn--filtered': currentSortCombined !== 'name:asc'
+              }"
+              aria-haspopup="listbox"
+              :aria-expanded="isSortDropdownOpen"
+              aria-label="Sort snacks by arranging order"
+              @click="toggleSortDropdown"
             >
-              <option value="name:asc">Name: A to Z</option>
-              <option value="name:desc">Name: Z to A</option>
-              <option value="quantity:desc">Stock: High to Low</option>
-              <option value="quantity:asc">Stock: Low to High</option>
-              <option value="votes:desc">Votes: Most Popular</option>
-              <option value="votes:asc">Votes: Least Popular</option>
-              <option value="created_at:desc">Newest Added</option>
-              <option value="created_at:asc">Oldest Added</option>
-            </select>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="sort-icon-prefix">
+                <line x1="4" y1="6" x2="20" y2="6" />
+                <line x1="4" y1="12" x2="14" y2="12" />
+                <line x1="4" y1="18" x2="8" y2="18" />
+              </svg>
+              <span class="dropdown-btn-label">{{ currentSortLabel }}</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="dropdown-chevron" :class="{ 'dropdown-chevron--flipped': isSortDropdownOpen }">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+
+            <!-- Dropdown Menu Animation -->
+            <Transition name="filter-dropdown">
+              <div
+                v-if="isSortDropdownOpen"
+                class="snacks-dropdown-menu snacks-dropdown-menu--sort"
+                role="listbox"
+                aria-label="Arranging order options"
+              >
+                <div class="dropdown-menu-header">Arranging Order</div>
+                <button
+                  v-for="opt in sortOptions"
+                  :key="opt.value"
+                  type="button"
+                  role="option"
+                  :aria-selected="currentSortCombined === opt.value"
+                  class="dropdown-menu-item"
+                  :class="{ 'dropdown-menu-item--selected': currentSortCombined === opt.value }"
+                  @click="selectSort(opt.value)"
+                >
+                  <span class="item-label">{{ opt.label }}</span>
+                  <svg v-if="currentSortCombined === opt.value" class="item-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </button>
+              </div>
+            </Transition>
           </div>
         </div>
       </div>
@@ -279,6 +344,7 @@ import AddSnackModal from '../components/AddSnackModal.vue';
 import EditSnackModal from '../components/EditSnackModal.vue';
 import RestockModal from '../components/RestockModal.vue';
 import DeleteConfirmDialog from '../components/DeleteConfirmDialog.vue';
+import { onClickOutside } from '../utils/clickOutside';
 import gsap from 'gsap';
 
 const route = useRoute();
@@ -323,6 +389,82 @@ const currentSortCombined = computed({
       sortOrder.value = ord as any;
     }
   },
+});
+
+// Dropdown States, Options, and Handlers
+const isStatusDropdownOpen = ref(false);
+const isSortDropdownOpen = ref(false);
+const statusDropdownRef = ref<HTMLElement | null>(null);
+const sortDropdownRef = ref<HTMLElement | null>(null);
+
+const statusOptions = [
+  { value: '', label: 'Status: All', dotClass: 'dot--all' },
+  { value: 'stocked', label: 'Stocked', dotClass: 'dot--stocked' },
+  { value: 'running_low', label: 'Running Low', dotClass: 'dot--running-low' },
+  { value: 'gone', label: 'Out of Stock', dotClass: 'dot--gone' },
+];
+
+const sortOptions = [
+  { value: 'name:asc', label: 'Name: A to Z' },
+  { value: 'name:desc', label: 'Name: Z to A' },
+  { value: 'quantity:desc', label: 'Stock: High to Low' },
+  { value: 'quantity:asc', label: 'Stock: Low to High' },
+  { value: 'votes:desc', label: 'Votes: Most Popular' },
+  { value: 'votes:asc', label: 'Votes: Least Popular' },
+  { value: 'created_at:desc', label: 'Newest Added' },
+  { value: 'created_at:asc', label: 'Oldest Added' },
+];
+
+const currentStatusLabel = computed(() => {
+  const opt = statusOptions.find(o => o.value === currentStatus.value);
+  return opt ? opt.label : 'Status: All';
+});
+
+const currentSortLabel = computed(() => {
+  const opt = sortOptions.find(o => o.value === currentSortCombined.value);
+  return opt ? opt.label : 'Sort by';
+});
+
+function toggleStatusDropdown() {
+  isStatusDropdownOpen.value = !isStatusDropdownOpen.value;
+  if (isStatusDropdownOpen.value) {
+    isSortDropdownOpen.value = false;
+  }
+}
+
+function toggleSortDropdown() {
+  isSortDropdownOpen.value = !isSortDropdownOpen.value;
+  if (isSortDropdownOpen.value) {
+    isStatusDropdownOpen.value = false;
+  }
+}
+
+function selectStatus(val: string) {
+  if (currentStatus.value === val) {
+    isStatusDropdownOpen.value = false;
+    return;
+  }
+  currentStatus.value = val;
+  isStatusDropdownOpen.value = false;
+  onFilterChange();
+}
+
+function selectSort(val: string) {
+  if (currentSortCombined.value === val) {
+    isSortDropdownOpen.value = false;
+    return;
+  }
+  currentSortCombined.value = val;
+  isSortDropdownOpen.value = false;
+  onSortChange();
+}
+
+onClickOutside(statusDropdownRef as any, () => {
+  isStatusDropdownOpen.value = false;
+});
+
+onClickOutside(sortDropdownRef as any, () => {
+  isSortDropdownOpen.value = false;
 });
 
 // Response Data
@@ -884,14 +1026,17 @@ onBeforeUnmount(() => {
   height: 14px;
 }
 
-/* Filter & Sort Select dropdowns */
-.snacks-view__filter-dropdown-wrap,
-.snacks-view__sort-dropdown-wrap {
+/* Custom Filter & Sort Dropdowns */
+.snacks-view__dropdown-wrap {
+  position: relative;
   flex-shrink: 0;
 }
 
-.snacks-view__select {
+.snacks-dropdown-btn {
   height: 42px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
   padding: 0 1rem;
   background-color: #FFFFFF;
   border: 1.5px solid #E6D7F6;
@@ -900,13 +1045,162 @@ onBeforeUnmount(() => {
   font-weight: 600;
   color: #190B2E;
   cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(73, 9, 130, 0.04);
   transition: all var(--transition-fast);
 }
 
-.snacks-view__select:focus {
-  outline: none;
+.snacks-dropdown-btn:hover {
   border-color: #490982;
+  background-color: #FAF5FE;
+  box-shadow: 0 3px 10px rgba(73, 9, 130, 0.08);
+}
+
+.snacks-dropdown-btn--open {
+  border-color: #490982;
+  background-color: #F1E8F8;
+  color: #490982;
   box-shadow: 0 0 0 3px rgba(73, 9, 130, 0.15);
+}
+
+.snacks-dropdown-btn--filtered {
+  border-color: #490982;
+  background-color: #FAF5FE;
+  color: #490982;
+}
+
+.sort-icon-prefix {
+  width: 15px;
+  height: 15px;
+  color: #490982;
+  flex-shrink: 0;
+}
+
+.dropdown-btn-label {
+  font-size: var(--text-sm);
+}
+
+.dropdown-chevron {
+  width: 15px;
+  height: 15px;
+  color: #6C5D82;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.dropdown-chevron--flipped {
+  transform: rotate(180deg);
+  color: #490982;
+}
+
+.status-indicator-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dot--all {
+  background-color: #490982;
+  box-shadow: 0 0 0 2px rgba(73, 9, 130, 0.2);
+}
+
+.dot--stocked {
+  background-color: #10B981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
+}
+
+.dot--running_low,
+.dot--running-low {
+  background-color: #F59E0B;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.25);
+}
+
+.dot--gone {
+  background-color: #EF4444;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.25);
+}
+
+.snacks-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 210px;
+  background-color: #FFFFFF;
+  border: 1px solid #EADBFA;
+  border-radius: 16px;
+  box-shadow: 0 16px 36px rgba(73, 9, 130, 0.15), 0 4px 12px rgba(0, 0, 0, 0.04);
+  padding: 6px;
+  z-index: 50;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.snacks-dropdown-menu--sort {
+  min-width: 220px;
+}
+
+.dropdown-menu-header {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6C5D82;
+  padding: 0.5rem 0.75rem 0.35rem;
+}
+
+.dropdown-menu-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.55rem 0.75rem;
+  border: none;
+  background: transparent;
+  border-radius: 10px;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: #190B2E;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.dropdown-menu-item:hover {
+  background-color: #FAF5FE;
+  color: #490982;
+  transform: translateX(2px);
+}
+
+.dropdown-menu-item--selected {
+  background-color: #F1E8F8;
+  color: #490982;
+  font-weight: 700;
+}
+
+.item-label {
+  flex: 1;
+}
+
+.item-check {
+  width: 16px;
+  height: 16px;
+  color: #490982;
+  flex-shrink: 0;
+}
+
+/* Dropdown Animation */
+.filter-dropdown-enter-active,
+.filter-dropdown-leave-active {
+  transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: top right;
+}
+
+.filter-dropdown-enter-from,
+.filter-dropdown-leave-to {
+  opacity: 0;
+  transform: translateY(-8px) scale(0.96);
 }
 
 /* Main Content Area */
